@@ -33,48 +33,66 @@ export default function LoginForm() {
   };
 
   return (
-    <Card className='w-2/5 mx-auto'>
-      <CardHeader className='flex flex-col items-center justify-center'>
-        <div className='flex flex-col gap-2 items-center text-secondary'>
-          <div className='flex flex-row items-center gap-3'>
-            <GiPadlock size={30} />
-            <h1 className='text-3xl font-semibold'>Login</h1>
+    <Card className='love-card'>
+      <CardHeader className='flex flex-col items-center justify-center pb-8'>
+        <div className='flex flex-col gap-4 items-center text-center'>
+          <div className='flex flex-row items-center gap-4'>
+            <div className='w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg'>
+              <GiPadlock size={32} className='text-white' />
+            </div>
+            <h1 className='love-title text-gray-800'>Login</h1>
           </div>
-          <p className='text-neutral-500'>Welcome back to NextMatch</p>
+          <p className='love-subtitle text-gray-600'>Welcome back to JW Faith Dating</p>
         </div>
       </CardHeader>
-      <CardBody>
+      <CardBody className='px-8 pb-8'>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className='space-y-4'>
-            <Input
-              defaultValue=''
-              label='Email'
-              variant='bordered'
-              {...register('email')}
-              isInvalid={!!errors.email}
-              errorMessage={errors.email?.message as string}
-            />
-            <Input
-              defaultValue=''
-              label='Password'
-              variant='bordered'
-              type='password'
-              {...register('password')}
-              isInvalid={!!errors.password}
-              errorMessage={errors.password?.message as string}
-            />
+          <div className='space-y-6'>
+            <div className='space-y-2'>
+              <label className='text-base font-bold text-gray-700'>Email</label>
+              <Input
+                defaultValue=''
+                variant='bordered'
+                {...register('email')}
+                isInvalid={!!errors.email}
+                errorMessage={errors.email?.message as string}
+                className='love-input'
+                placeholder='Enter your email'
+              />
+            </div>
+            <div className='space-y-2'>
+              <label className='text-base font-bold text-gray-700'>Password</label>
+              <Input
+                defaultValue=''
+                variant='bordered'
+                type='password'
+                {...register('password')}
+                isInvalid={!!errors.password}
+                errorMessage={errors.password?.message as string}
+                className='love-input'
+                placeholder='Enter your password'
+              />
+            </div>
             <Button
               isLoading={isSubmitting}
               isDisabled={!isValid}
               fullWidth
-              color='secondary'
               type='submit'
+              className='love-button-primary py-4 text-lg font-bold'
             >
               Login
             </Button>
             <SocialLogin />
-            <div className='flex justify-center hover:underline text-sm'>
-              <Link href='/forgot-password'>Forgot password?</Link>
+            <div className='flex flex-col items-center space-y-3'>
+              <Link href='/forgot-password' className='text-purple-600 hover:text-purple-700 font-semibold text-sm hover:underline'>
+                Forgot password?
+              </Link>
+              <div className='text-center'>
+                <span className='text-gray-600 text-sm'>Don't have an account? </span>
+                <Link href='/register' className='text-purple-600 hover:text-purple-700 font-semibold text-sm hover:underline'>
+                  Register here
+                </Link>
+              </div>
             </div>
           </div>
         </form>

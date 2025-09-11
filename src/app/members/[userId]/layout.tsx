@@ -9,9 +9,10 @@ export default async function Layout({
   params,
 }: {
   children: ReactNode;
-  params: { userId: string };
+  params: Promise<{ userId: string }>;
 }) {
-  const member = await getMemberByUserId(params.userId);
+  const { userId } = await params;
+  const member = await getMemberByUserId(userId);
   if (!member) return notFound();
 
   const basePath = `/members/${member.userId}`;
@@ -23,12 +24,12 @@ export default async function Layout({
   ];
 
   return (
-    <div className='grid grid-cols-12 gap-5 h-[80vh]'>
+    <div className='grid grid-cols-12 gap-5 min-h-screen'>
       <div className='col-span-3'>
         <MemberSidebar member={member} navLinks={navLinks} />
       </div>
       <div className='col-span-9'>
-        <Card className='w-full mt-10 h-[80vh]'>{children}</Card>
+        <Card className='w-full mt-10 min-h-screen'>{children}</Card>
       </div>
     </div>
   );

@@ -1,9 +1,6 @@
-import RegisterForm from './RegisterForm';
+import { redirect } from 'next/navigation';
 
 export default function RegisterPage() {
-  return (
-    <div className='flex items-center justify-center vertical-center'>
-      <RegisterForm />
-    </div>
-  );
+  // Always redirect to referral validation first
+  redirect('/register/referral');
 }

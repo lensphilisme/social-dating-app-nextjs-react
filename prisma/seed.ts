@@ -17,7 +17,7 @@ async function seedMembers() {
         member: {
           create: {
             dateOfBirth: new Date(member.dateOfBirth),
-            gender: member.gender,
+            gender: member.gender.toUpperCase() as any,
             name: member.name,
             created: new Date(member.created),
             updated: new Date(member.lastActive),

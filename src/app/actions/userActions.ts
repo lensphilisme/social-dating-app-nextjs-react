@@ -18,7 +18,35 @@ export async function updateMemberProfile(
 
     if (!validated.success) return { status: 'error', error: validated.error.errors };
 
-    const { name, description, city, country } = validated.data;
+    const { 
+      name, 
+      description, 
+      city, 
+      country,
+      state,
+      countryOfBirth,
+      baptismDate,
+      gender,
+      dateOfBirth,
+      firstName,
+      lastName,
+      congregation,
+      baptismStatus,
+      meetingAttendance,
+      fieldService,
+      spiritualStatement,
+      moralIntegrity,
+      maritalGoals,
+      spiritualExpectations,
+      childrenPreference,
+      hobbies,
+      education,
+      profession,
+      languages,
+      favoriteScripture,
+      spiritualAchievements,
+      spiritualGoals
+    } = validated.data;
 
     if (nameUpdated) {
       await prisma.user.update({
@@ -27,13 +55,68 @@ export async function updateMemberProfile(
       });
     }
 
-    const member = await prisma.member.update({
+    // Use upsert to handle both create and update
+    const member = await prisma.member.upsert({
       where: { userId },
-      data: {
+      update: {
         name,
         description,
         city,
         country,
+        state,
+        countryOfBirth,
+        baptismDate: baptismDate ? new Date(baptismDate) : null,
+        gender: gender || 'MALE',
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : new Date('1990-01-01'),
+        firstName,
+        lastName,
+        congregation,
+        baptismStatus,
+        meetingAttendance,
+        fieldService,
+        spiritualStatement,
+        moralIntegrity,
+        maritalGoals,
+        spiritualExpectations,
+        childrenPreference,
+        hobbies,
+        education,
+        profession,
+        languages,
+        favoriteScripture,
+        spiritualAchievements,
+        spiritualGoals,
+        updated: new Date(),
+      },
+      create: {
+        userId,
+        name,
+        description,
+        city,
+        country,
+        state,
+        countryOfBirth,
+        baptismDate: baptismDate ? new Date(baptismDate) : null,
+        gender: gender || 'MALE',
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : new Date('1990-01-01'),
+        firstName,
+        lastName,
+        congregation,
+        baptismStatus,
+        meetingAttendance,
+        fieldService,
+        spiritualStatement,
+        moralIntegrity,
+        maritalGoals,
+        spiritualExpectations,
+        childrenPreference,
+        hobbies,
+        education,
+        profession,
+        languages,
+        favoriteScripture,
+        spiritualAchievements,
+        spiritualGoals,
       },
     });
     return { status: 'success', data: member };
@@ -47,6 +130,15 @@ export async function updateMemberProfile(
 export async function addImage(url: string, publicId: string) {
   try {
     const userId = await getAuthUserId();
+
+    // Check if member exists first
+    const existingMember = await prisma.member.findUnique({
+      where: { userId },
+    });
+
+    if (!existingMember) {
+      throw new Error('Member profile not found. Please complete your profile first.');
+    }
 
     return prisma.member.update({
       where: { userId },
@@ -72,6 +164,15 @@ export async function setMainImage(photo: Photo) {
   try {
     const userId = await getAuthUserId();
 
+    // Check if member exists first
+    const existingMember = await prisma.member.findUnique({
+      where: { userId },
+    });
+
+    if (!existingMember) {
+      throw new Error('Member profile not found. Please complete your profile first.');
+    }
+
     await prisma.user.update({
       where: { id: userId },
       data: { image: photo.url },
@@ -90,6 +191,15 @@ export async function setMainImage(photo: Photo) {
 export async function deleteImage(photo: Photo) {
   try {
     const userId = await getAuthUserId();
+
+    // Check if member exists first
+    const existingMember = await prisma.member.findUnique({
+      where: { userId },
+    });
+
+    if (!existingMember) {
+      throw new Error('Member profile not found. Please complete your profile first.');
+    }
 
     if (photo.publicId) {
       await cloudinary.v2.uploader.destroy(photo.publicId);

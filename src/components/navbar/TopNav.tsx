@@ -1,10 +1,8 @@
 import { getUserInfoForNav } from '@/app/actions/userActions';
 import { auth } from '@/auth';
-import { Button, Navbar, NavbarBrand, NavbarContent } from '@nextui-org/react';
 import Link from 'next/link';
 import { GiMatchTip } from 'react-icons/gi';
 import FiltersWrapper from './FiltersWrapper';
-import NavLink from './NavLink';
 import UserMenu from './UserMenu';
 
 export default async function TopNav() {
@@ -12,8 +10,12 @@ export default async function TopNav() {
   const userInfo = session?.user && (await getUserInfoForNav());
 
   const memberLinks = [
-    { href: '/members', label: 'Matches' },
-    { href: '/lists', label: 'Lists' },
+    { href: '/discover', label: 'Discover' },
+    { href: '/matches', label: 'Matches' },
+    { href: '/favorites', label: 'Favorites' },
+    { href: '/members', label: 'All Members' },
+    { href: '/match-requests', label: 'Requests' },
+    { href: '/questions', label: 'Questions' },
     { href: '/messages', label: 'Messages' },
   ];
 
@@ -22,41 +24,73 @@ export default async function TopNav() {
   const links = session?.user.role === 'ADMIN' ? adminLinks : memberLinks;
 
   return (
-    <>
-      <Navbar
-        maxWidth='xl'
-        className='bg-gradient-to-r from-purple-400 to-purple-700'
-        classNames={{
-          item: ['text-xl', 'text-white', 'uppercase', 'data-[active=true]:text-yellow-200'],
-        }}
-      >
-        <NavbarBrand as={Link} href='/'>
-          <GiMatchTip size={40} className='text-gray-200' />
-          <div className='font-bold text-3xl flex'>
-            <span className='text-gray-900'>Next</span>
-            <span className='text-gray-200'>Match</span>
+    <div className="w-full">
+      <nav className="bg-gradient-to-r from-purple-400 to-purple-700 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+              <span className="text-xl">💒</span>
+            </div>
+            <div className="font-black text-2xl bg-gradient-to-r from-yellow-400 to-purple-600 bg-clip-text text-transparent">
+              JW Date
+            </div>
+          </Link>
+
+          {/* Navigation Links */}
+          <div className="flex items-center gap-6">
+            {session ? (
+              links.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="text-xl text-white uppercase hover:text-yellow-200 transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-xl text-white uppercase hover:text-yellow-200 transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="text-xl text-white uppercase hover:text-yellow-200 transition-colors"
+                >
+                  Register
+                </Link>
+              </>
+            )}
           </div>
-        </NavbarBrand>
-        <NavbarContent justify='center'>
-          {session &&
-            links.map((item) => <NavLink key={item.href} href={item.href} label={item.label} />)}
-        </NavbarContent>
-        <NavbarContent justify='end'>
-          {userInfo ? (
-            <UserMenu userInfo={userInfo} />
-          ) : (
-            <>
-              <Button as={Link} href='/login' variant='bordered' className='text-white'>
-                Login
-              </Button>
-              <Button as={Link} href='/register' variant='bordered' className='text-white'>
-                Register
-              </Button>
-            </>
-          )}
-        </NavbarContent>
-      </Navbar>
+
+          {/* User Menu */}
+          <div className="flex items-center gap-4">
+            {userInfo ? (
+              <UserMenu userInfo={userInfo} />
+            ) : (
+              <div className="flex gap-2">
+                <Link
+                  href="/login"
+                  className="px-4 py-2 border border-white text-white rounded hover:bg-white hover:text-purple-700 transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-4 py-2 border border-white text-white rounded hover:bg-white hover:text-purple-700 transition-colors"
+                >
+                  Register
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
       <FiltersWrapper />
-    </>
+    </div>
   );
 }

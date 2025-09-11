@@ -1,23 +1,13 @@
-import { getMessagesByContainer } from '../actions/messageActions';
-import MessageSidebar from './MessageSidebar';
-import MessageTable from './MessageTable';
+import { Suspense } from 'react';
+import MessagesContent from '@/components/messages/MessagesContent';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
-export default async function MessagesPage({
-  searchParams,
-}: {
-  searchParams: { container: string };
-}) {
-  const { messages, nextCursor } = await getMessagesByContainer(searchParams.container);
-  console.log({ messages });
-
+export default function MessagesPage() {
   return (
-    <div className='grid grid-cols-12 gap-5 h-[80vh] mt-10'>
-      <div className='col-span-2'>
-        <MessageSidebar />
-      </div>
-      <div className='col-span-10'>
-        <MessageTable initialMessages={messages} nextCursor={nextCursor} />
-      </div>
+    <div className="min-h-screen bg-neutral-50">
+      <Suspense fallback={<LoadingSpinner />}>
+        <MessagesContent />
+      </Suspense>
     </div>
   );
 }

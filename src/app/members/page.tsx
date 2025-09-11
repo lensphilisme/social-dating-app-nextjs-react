@@ -1,29 +1,13 @@
-import EmptyState from '@/components/EmptyState';
-import PaginationComponent from '@/components/PaginationComponent';
-import { GetMemberParams } from '@/types';
-import { fetchCurrentUserLikeIds } from '../actions/likeActions';
-import { getMembers } from '../actions/memberActions';
-import MemberCard from './MemberCard';
+import { Suspense } from 'react';
+import MembersContent from '@/components/members/MembersContent';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
-export default async function MembersPage({ searchParams }: { searchParams: GetMemberParams }) {
-  const { items: members, totalCount } = await getMembers(searchParams);
-  const likeIds = await fetchCurrentUserLikeIds();
-
+export default function MembersPage() {
   return (
-    <>
-      {!members || members.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <>
-          <div className='mt-10 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-8'>
-            {members &&
-              members.map((member) => (
-                <MemberCard member={member} key={member.id} likeIds={likeIds} />
-              ))}
-          </div>
-          <PaginationComponent totalCount={totalCount} />
-        </>
-      )}
-    </>
+    <div className="min-h-screen bg-neutral-50">
+      <Suspense fallback={<LoadingSpinner />}>
+        <MembersContent />
+      </Suspense>
+    </div>
   );
 }

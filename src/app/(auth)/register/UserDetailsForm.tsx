@@ -9,16 +9,31 @@ export default function UserDetailsForm() {
     getValues,
     formState: { errors },
   } = useFormContext();
+
   return (
     <div className='space-y-4'>
+      <div className='text-center mb-4'>
+        <h2 className='text-xl font-semibold text-gray-800'>Account Details</h2>
+        <p className='text-sm text-gray-600'>Create your account information</p>
+      </div>
+
       <Input
-        defaultValue={getValues('name')}
-        label='Name'
+        defaultValue={getValues('referralCode')}
+        label='Referral Code'
         variant='bordered'
-        {...register('name')}
-        isInvalid={!!errors.name}
-        errorMessage={errors.name?.message as string}
+        {...register('referralCode')}
+        isInvalid={!!errors.referralCode}
+        errorMessage={errors.referralCode?.message as string}
+        readOnly
+        className="bg-gray-50"
       />
+
+      <div className='bg-green-50 p-3 rounded-lg'>
+        <p className='text-sm text-green-700'>
+          ✅ Referral code validated successfully!
+        </p>
+      </div>
+
       <Input
         defaultValue={getValues('email')}
         label='Email'

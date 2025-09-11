@@ -4,6 +4,7 @@ import { auth, signIn, signOut } from '@/auth';
 import { sendPasswordResetEmail, sendVerificationEmail } from '@/lib/mail';
 import { prisma } from '@/lib/prisma';
 import { LoginSchema } from '@/lib/schemas/loginSchema';
+import { createReferralCode, useReferralCode } from '@/lib/referralUtils';
 import {
   ProfileSchema,
   RegisterSchema,
@@ -65,8 +66,38 @@ export async function registerUser(data: RegisterSchema): Promise<ActionResult<U
       return { status: 'error', error: validated.error.errors };
     }
 
-    const { name, email, password, gender, description, dateOfBirth, city, country } =
-      validated.data;
+    const { 
+      email, 
+      password, 
+      referralCode,
+      gender, 
+      description, 
+      dateOfBirth, 
+      city, 
+      country,
+      firstName,
+      lastName,
+      username,
+      state,
+      countryOfBirth,
+      baptismDate,
+      baptismStatus,
+      meetingAttendance,
+      fieldService,
+      congregation,
+      moralIntegrity,
+      spiritualStatement,
+      maritalGoals,
+      childrenPreference,
+      spiritualExpectations,
+      education,
+      profession,
+      languages,
+      hobbies,
+      favoriteScripture,
+      spiritualAchievements,
+      spiritualGoals
+    } = validated.data;
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -76,24 +107,72 @@ export async function registerUser(data: RegisterSchema): Promise<ActionResult<U
 
     if (existingUser) return { status: 'error', error: 'User already exists' };
 
+    // Validate referral code first
+    const referrer = await prisma.user.findUnique({
+      where: { referralCode }
+    });
+
+    if (!referrer) {
+      return { status: 'error', error: 'Invalid referral code' };
+    }
+
     const user = await prisma.user.create({
       data: {
-        name,
+        name: username,
         email,
         passwordHash: hashedPassword,
         profileComplete: true,
+        referredBy: referrer.id,
         member: {
           create: {
-            name,
+            name: username,
             description,
             city,
             country,
             dateOfBirth: new Date(dateOfBirth),
-            gender,
+            gender: gender?.toUpperCase() as 'MALE' | 'FEMALE',
+            firstName,
+            lastName,
+            state,
+            countryOfBirth,
+            baptismDate: baptismDate ? new Date(baptismDate) : null,
+            baptismStatus,
+            meetingAttendance,
+            fieldService,
+            congregation,
+            moralIntegrity,
+            spiritualStatement,
+            maritalGoals,
+            childrenPreference,
+            spiritualExpectations,
+            education,
+            profession,
+            languages,
+            hobbies,
+            favoriteScripture,
+            spiritualAchievements,
+            spiritualGoals,
           },
         },
       },
     });
+
+    // Generate referral code for the new user
+    await createReferralCode(user.id);
+    
+    // Update referral count and regenerate code if needed
+    const newCount = referrer.referralCount + 1;
+    
+    await prisma.user.update({
+      where: { id: referrer.id },
+      data: { referralCount: newCount }
+    });
+    
+    // If referral count reaches 5, regenerate the code
+    if (newCount >= 5) {
+      const { regenerateReferralCode } = await import('@/lib/referralUtils');
+      await regenerateReferralCode(referrer.id);
+    }
 
     const verificationToken = await generateToken(email, TokenType.VERIFICATION);
 

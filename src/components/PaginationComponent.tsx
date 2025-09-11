@@ -1,7 +1,7 @@
 'use client';
 
 import usePaginationStore from '@/hooks/usePaginationStore';
-import { Pagination } from '@nextui-org/react';
+// import { Pagination } from '@nextui-org/react';
 import clsx from 'clsx';
 import { useEffect } from 'react';
 
@@ -27,13 +27,21 @@ export default function PaginationComponent({ totalCount }: { totalCount: number
     <div className='border-t-2 w-full mt-5'>
       <div className='flex flex-row justify-between items-center py-5'>
         <div>{resultText}</div>
-        <Pagination
-          total={totalPages}
-          color='secondary'
-          page={pageNumber}
-          variant='bordered'
-          onChange={setPage}
-        />
+        <div className="flex gap-2">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => setPage(page)}
+              className={`px-3 py-1 rounded ${
+                page === pageNumber 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+        </div>
         <div className='flex flex-row gap-1 items-center'>
           Page size:
           {[3, 6, 12].map((size) => (

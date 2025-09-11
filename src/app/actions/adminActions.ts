@@ -83,3 +83,39 @@ export async function rejectPhoto(photo: Photo) {
     throw error;
   }
 }
+
+export async function getUnverifiedUsers() {
+  try {
+    const role = await getUserRole();
+
+    if (role !== 'ADMIN') throw new Error('Forbidden');
+
+    return prisma.user.findMany({
+      where: {
+        emailVerified: null,
+      },
+      include: {
+        member: true,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+export async function manuallyVerifyUser(userId: string) {
+  try {
+    const role = await getUserRole();
+
+    if (role !== 'ADMIN') throw new Error('Forbidden');
+
+    return prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: new Date() },
+    });
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}

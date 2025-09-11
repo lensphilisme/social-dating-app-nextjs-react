@@ -13,15 +13,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -35,28 +34,65 @@ model User {
   image           String?
   profileComplete Boolean   @default(false)
   role            Role      @default(MEMBER)
+  referralCode    String?   @unique
+  referralCount   Int       @default(0)
+  referredBy      String?
   accounts        Account[]
   member          Member?
+  User            User?     @relation("UserToUser", fields: [referredBy], references: [id])
+  other_User      User[]    @relation("UserToUser")
+  reportsMade     Report[]  @relation("ReportedBy")
+  reportsReceived Report[]  @relation("Reported")
+  bans            UserBan[]
+  media           UserMedia[]
+  favorites       Favorite[] @relation("UserFavorites")
+  favoritedBy     Favorite[] @relation("UserFavorited")
 }
 
 model Member {
-  id                String    @id @default(cuid())
-  userId            String    @unique
-  name              String
-  gender            String
-  dateOfBirth       DateTime
-  created           DateTime  @default(now())
-  updated           DateTime  @default(now())
-  description       String
-  city              String
-  country           String
-  image             String?
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  photos            Photo[]
-  sourceLikes       Like[]    @relation("source")
-  targetLikes       Like[]    @relation("target")
-  senderMessages    Message[] @relation("sender")
-  recipientMessages Message[] @relation("recipient")
+  id                    String              @id @default(cuid())
+  userId                String              @unique
+  name                  String
+  dateOfBirth           DateTime
+  created               DateTime            @default(now())
+  updated               DateTime            @default(now())
+  description           String
+  city                  String
+  country               String
+  image                 String?
+  baptismStatus         BaptismStatus?
+  childrenPreference    ChildrenPreference?
+  congregation          String?
+  education             String?
+  favoriteScripture     String?
+  fieldService          FieldService?
+  firstName             String?
+  hobbies               String?
+  languages             String?
+  maritalGoals          MaritalGoals?
+  meetingAttendance     MeetingAttendance?
+  profession            String?
+  spiritualAchievements String?
+  spiritualExpectations String?
+  spiritualGoals        String?
+  spiritualStatement    String?
+  gender                Gender
+  lastName              String?
+  moralIntegrity        Boolean             @default(false)
+  countryOfBirth        String?
+  state                 String?
+  baptismDate           DateTime?
+  sourceLikes           Like[]              @relation("source")
+  targetLikes           Like[]              @relation("target")
+  matchesAsUser1        Match[]             @relation("MatchUser1")
+  matchesAsUser2        Match[]             @relation("MatchUser2")
+  receivedMatchRequests MatchRequest[]      @relation("MatchRequestRecipient")
+  sentMatchRequests     MatchRequest[]      @relation("MatchRequestSender")
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientMessages     Message[]           @relation("recipient")
+  senderMessages        Message[]           @relation("sender")
+  photos                Photo[]
+  questions             Question[]
 }
 
 model Photo {
@@ -64,16 +100,14 @@ model Photo {
   url        String
   publicId   String?
   isApproved Boolean @default(false)
-
-  memberId String
-  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId   String
+  member     Member  @relation(fields: [memberId], references: [id], onDelete: Cascade)
 }
 
 model Like {
   sourceUserId String
-  sourceMember Member @relation("source", fields: [sourceUserId], references: [userId], onDelete: Cascade)
-
   targetUserId String
+  sourceMember Member @relation("source", fields: [sourceUserId], references: [userId], onDelete: Cascade)
   targetMember Member @relation("target", fields: [targetUserId], references: [userId], onDelete: Cascade)
 
   @@id([sourceUserId, targetUserId])
@@ -85,11 +119,62 @@ model Message {
   created          DateTime  @default(now())
   senderId         String?
   recipientId      String?
-  sender           Member?   @relation("sender", fields: [senderId], references: [userId], onDelete: SetNull)
-  recipient        Member?   @relation("recipient", fields: [recipientId], references: [userId], onDelete: SetNull)
   dateRead         DateTime?
   senderDeleted    Boolean   @default(false)
   recipientDeleted Boolean   @default(false)
+  recipient        Member?   @relation("recipient", fields: [recipientId], references: [userId])
+  sender           Member?   @relation("sender", fields: [senderId], references: [userId])
+}
+
+model MatchRequest {
+  id           String             @id @default(cuid())
+  senderId     String
+  recipientId  String
+  status       MatchRequestStatus @default(PENDING)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @default(now())
+  ignoreReason String?
+  recipient    Member             @relation("MatchRequestRecipient", fields: [recipientId], references: [userId], onDelete: Cascade)
+  sender       Member             @relation("MatchRequestSender", fields: [senderId], references: [userId], onDelete: Cascade)
+  responses    MatchResponse[]
+
+  @@unique([senderId, recipientId])
+}
+
+model MatchResponse {
+  id             String       @id @default(cuid())
+  matchRequestId String
+  questionId     String
+  answer         String
+  createdAt      DateTime     @default(now())
+  matchRequest   MatchRequest @relation(fields: [matchRequestId], references: [id], onDelete: Cascade)
+  question       Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([matchRequestId, questionId])
+}
+
+model Question {
+  id           String          @id @default(cuid())
+  userId       String
+  question     String
+  responseType QuestionType
+  isActive     Boolean         @default(true)
+  timerSeconds Int             @default(10)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @default(now())
+  responses    MatchResponse[]
+  user         Member          @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model Match {
+  id        String   @id @default(cuid())
+  user1Id   String
+  user2Id   String
+  createdAt DateTime @default(now())
+  user1     Member   @relation("MatchUser1", fields: [user1Id], references: [userId], onDelete: Cascade)
+  user2     Member   @relation("MatchUser2", fields: [user2Id], references: [userId], onDelete: Cascade)
+
+  @@unique([user1Id, user2Id])
 }
 
 model Token {
@@ -110,4 +195,142 @@ enum TokenType {
 enum Role {
   ADMIN
   MEMBER
+}
+
+enum MatchRequestStatus {
+  PENDING
+  ACCEPTED
+  IGNORED
+}
+
+enum QuestionType {
+  YES_NO
+  OPEN_TEXT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum BaptismStatus {
+  BAPTIZED
+  INACTIVE
+  NEEDS_ENCOURAGEMENT
+}
+
+enum ChildrenPreference {
+  WANT_CHILDREN
+  MAYBE
+  PREFER_NONE
+}
+
+enum FieldService {
+  ACTIVE
+  OCCASIONAL
+  INACTIVE
+}
+
+enum MaritalGoals {
+  MARRIAGE_ONLY
+  SPIRITUAL_GROWTH
+  FAMILY_FOCUSED
+}
+
+enum MeetingAttendance {
+  REGULAR
+  OCCASIONAL
+  RARELY
+}
+
+enum ReportStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportType {
+  INAPPROPRIATE_BEHAVIOR
+  FAKE_PROFILE
+  SPAM
+  HARASSMENT
+  INAPPROPRIATE_CONTENT
+  OTHER
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  reporterId  String
+  reportedId  String
+  type        ReportType
+  reason      String
+  description String?
+  proof       String?      // File path or URL
+  status      ReportStatus @default(PENDING)
+  adminNotes  String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now())
+  
+  reporter    User         @relation("ReportedBy", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported    User         @relation("Reported", fields: [reportedId], references: [id], onDelete: Cascade)
+  
+  @@index([reportedId])
+  @@index([status])
+}
+
+model UserBan {
+  id          String    @id @default(cuid())
+  userId      String
+  reason      String
+  duration    Int?      // Days, null for permanent
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([isActive])
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+}
+
+model UserMedia {
+  id          String    @id @default(cuid())
+  userId      String
+  type        MediaType
+  url         String
+  thumbnail   String?   // For videos
+  title       String?
+  description String?
+  isPublic    Boolean   @default(true)
+  isMain      Boolean   @default(false)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([type])
+  @@index([isPublic])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  targetId  String
+  createdAt DateTime @default(now())
+  
+  user      User     @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+  target    User     @relation("UserFavorited", fields: [targetId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, targetId])
+  @@index([userId])
+  @@index([targetId])
 }

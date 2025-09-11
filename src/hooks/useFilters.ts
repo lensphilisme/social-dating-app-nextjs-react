@@ -50,7 +50,7 @@ export const useFilters = () => {
 
   const orderByList = [
     { label: 'Last active', value: 'updated' },
-    { label: 'Newest members', value: 'created' },
+    { label: 'Newest members', value: 'created' }
   ];
 
   const genderList = [
@@ -78,7 +78,7 @@ export const useFilters = () => {
   };
 
   const handleWithPhotoToggle = (e: ChangeEvent<HTMLInputElement>) => {
-    setFilters('withPhoto', e.target.checked);
+    setFilters('withPhoto', e.target?.checked || false);
   };
 
   return {

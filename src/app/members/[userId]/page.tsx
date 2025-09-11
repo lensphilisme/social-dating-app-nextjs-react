@@ -1,11 +1,14 @@
 import { getMemberByUserId } from '@/app/actions/memberActions';
-import CardInnerWrapper from '@/components/CardInnerWrapper';
 import { notFound } from 'next/navigation';
+import ProfileDetailContent from '@/components/profile/ProfileDetailContent';
 
-export default async function MemberDetailedPage({ params }: { params: { userId: string } }) {
-  const member = await getMemberByUserId(params.userId);
+export default async function MemberDetailedPage({ params }: { params: Promise<{ userId: string }> }) {
+  const { userId } = await params;
+  const member = await getMemberByUserId(userId);
 
   if (!member) return notFound();
 
-  return <CardInnerWrapper header='Profile' body={<div>{member.description}</div>} />;
+  return <ProfileDetailContent member={member} />;
 }
+
+

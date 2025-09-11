@@ -1,7 +1,7 @@
 'use client';
 
 import { useFilters } from '@/hooks/useFilters';
-import { Button, Select, SelectItem, Slider, Spinner, Switch } from '@nextui-org/react';
+import { Button, Spinner } from '@nextui-org/react';
 
 export default function Filters() {
   const {
@@ -41,38 +41,52 @@ export default function Filters() {
           ))}
         </div>
         <div className='flex flex-row items-center gap-2 w-1/4'>
-          <Slider
-            label={clientLoaded && 'Age range'}
-            color='secondary'
-            size='sm'
-            minValue={18}
-            maxValue={100}
-            defaultValue={filters.ageRange}
-            onChangeEnd={(value) => selectAge(value as number[])}
-            aria-label='Age range slider'
-          />
+          <div className="flex flex-col w-full">
+            <label className="text-sm text-gray-600 mb-1">Age range: {filters.ageRange[0]} - {filters.ageRange[1]}</label>
+            <div className="flex gap-2 items-center">
+              <input
+                type="range"
+                min="18"
+                max="100"
+                value={filters.ageRange[0]}
+                onChange={(e) => selectAge([parseInt(e.target.value), filters.ageRange[1]])}
+                className="flex-1"
+              />
+              <input
+                type="range"
+                min="18"
+                max="100"
+                value={filters.ageRange[1]}
+                onChange={(e) => selectAge([filters.ageRange[0], parseInt(e.target.value)])}
+                className="flex-1"
+              />
+            </div>
+          </div>
         </div>
         <div className='flex flex-col items-center'>
           <p className='text-sm'>With photo</p>
-          <Switch color='secondary' defaultSelected size='sm' onChange={selectWithPhoto} />
+          <input
+            type="checkbox"
+            defaultChecked={filters.withPhoto}
+            onChange={(e) => selectWithPhoto(e.target.checked)}
+            className="mt-1"
+          />
         </div>
         <div className='w-1/4'>
-          <Select
-            size='sm'
-            fullWidth
-            label='Order by'
-            variant='bordered'
-            color='secondary'
-            aria-label='Order by selector'
-            selectedKeys={new Set([filters.orderBy])}
-            onSelectionChange={selectOrder}
-          >
-            {orderByList.map((item) => (
-              <SelectItem key={item.value} value={item.value}>
-                {item.label}
-              </SelectItem>
-            ))}
-          </Select>
+          <div className="flex flex-col">
+            <label className="text-sm text-gray-600 mb-1">Order by</label>
+            <select
+              value={filters.orderBy}
+              onChange={(e) => selectOrder(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+            >
+              {orderByList.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
     </div>

@@ -36,7 +36,8 @@ export default function MemberCard({ member, likeIds }: Props) {
   };
 
   return (
-    <Card fullWidth as={Link} href={`/members/${member.userId}`} isPressable>
+    <Link href={`/members/${member.userId}`} className="block">
+      <Card fullWidth isPressable>
       <Image
         isZoomed
         alt={member.name}
@@ -61,6 +62,7 @@ export default function MemberCard({ member, likeIds }: Props) {
           <span className='text-sm'>{member.city}</span>
         </div>
       </CardFooter>
-    </Card>
+      </Card>
+    </Link>
   );
 }
