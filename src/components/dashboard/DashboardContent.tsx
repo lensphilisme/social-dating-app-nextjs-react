@@ -157,7 +157,7 @@ export default function DashboardContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 p-4 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 p-4 lg:p-8 pt-20 lg:pt-20 pb-20 lg:pb-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div

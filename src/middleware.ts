@@ -24,9 +24,9 @@ export default async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
     
-    // If user is authenticated and trying to access login/register, redirect to dashboard
+    // If user is authenticated and trying to access login/register, redirect to discover
     if (session && (pathname === '/login' || pathname === '/register')) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/discover', request.url));
     }
 
     return NextResponse.next();

@@ -15,8 +15,16 @@ export async function getMatches(): Promise<any[]> {
         ]
       },
       include: {
-        user1: true,
-        user2: true
+        user1: {
+          include: {
+            member: true
+          }
+        },
+        user2: {
+          include: {
+            member: true
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
     });

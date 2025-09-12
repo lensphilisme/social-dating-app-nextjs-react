@@ -5,6 +5,7 @@ import { getDiscoverMembers, sendMatchRequest, getUserQuestions } from '@/app/ac
 import { addToFavorites } from '@/app/actions/favoriteActions';
 import SwipeCard from './SwipeCard';
 import QuestionPromptModal from './QuestionPromptModal';
+import HeartAnimation from '@/components/ui/HeartAnimation';
 import { Member, Question } from '@prisma/client';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
@@ -147,7 +148,7 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className="h-screen bg-black overflow-hidden relative">
+    <div className="h-screen bg-black overflow-hidden relative pt-16 lg:pt-16 pb-16 lg:pb-0">
       {/* Undo Button - Top Left */}
       {swipedMembers.length > 0 && currentIndex > 0 && (
         <button
@@ -158,7 +159,7 @@ export default function DiscoverPage() {
         </button>
       )}
 
-      {/* Cards Stack - Full Screen, Photo sticks to top */}
+      {/* Cards Stack - With margins to show next user behind */}
       <div className="relative h-full w-full">
         {members.slice(currentIndex, currentIndex + 3).map((member, index) => (
           <SwipeCard
@@ -170,6 +171,38 @@ export default function DiscoverPage() {
             isTop={index === 0}
           />
         ))}
+      </div>
+
+      {/* Action Buttons - Fixed position above bottom nav */}
+      <div className="absolute bottom-20 left-4 right-4 flex items-center justify-between lg:bottom-4 z-40">
+        {/* Pass Button */}
+        <button
+          onClick={() => currentIndex < members.length && handleSwipe('left', members[currentIndex])}
+          className="w-14 h-14 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 hover:bg-red-500/30 hover:border-red-400 hover:scale-105 transition-all duration-300 shadow-lg"
+        >
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Match Request Button (Heart) */}
+        <button
+          onClick={() => currentIndex < members.length && handleMatchRequest(members[currentIndex])}
+          className="w-20 h-20 flex items-center justify-center hover:scale-110 transition-all duration-300"
+        >
+          {/* Heart animation */}
+          <HeartAnimation className="w-12 h-12" />
+        </button>
+
+        {/* Like Button */}
+        <button
+          onClick={() => currentIndex < members.length && handleSwipe('right', members[currentIndex])}
+          className="w-14 h-14 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 hover:bg-pink-500/30 hover:border-pink-400 hover:scale-105 transition-all duration-300 shadow-lg"
+        >
+          <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+        </button>
       </div>
 
       {/* Question Prompt Modal */}

@@ -13,35 +13,65 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id;
 
     // Get counts from database
-    const [matchesCount, messagesCount, favoritesCount] = await Promise.all([
-      // Count new match requests (where user is recipient and status is pending)
-      prisma.matchRequest.count({
+    let matchesCount = 0;
+    let messagesCount = 0;
+    let favoritesCount = 0;
+    let matchRequestsCount = 0;
+
+    try {
+      // Count new matches (mutual matches that allow chatting)
+      matchesCount = await prisma.match.count({
         where: {
-          recipientId: userId,
-          status: 'PENDING'
+          OR: [
+            { user1Id: userId },
+            { user2Id: userId }
+          ]
         }
-      }),
-      
+      });
+    } catch (error) {
+      console.error('Error counting matches:', error);
+    }
+
+    try {
       // Count unread messages
-      prisma.message.count({
+      messagesCount = await prisma.message.count({
         where: {
           recipientId: userId,
           dateRead: null
         }
-      }),
-      
+      });
+    } catch (error) {
+      console.error('Error counting messages:', error);
+    }
+
+    try {
       // Count favorites (people who liked the user)
-      prisma.favorite.count({
+      favoritesCount = await prisma.favorite.count({
         where: {
           targetId: userId
         }
-      })
-    ]);
+      });
+    } catch (error) {
+      console.error('Error counting favorites:', error);
+    }
+
+    try {
+      // Count new match requests (where user is recipient and status is pending)
+      matchRequestsCount = await prisma.matchRequest.count({
+        where: {
+          recipientId: userId,
+          status: 'PENDING'
+        }
+      });
+    } catch (error) {
+      console.error('Error counting match requests:', error);
+    }
 
     return NextResponse.json({
       matches: matchesCount,
       messages: messagesCount,
-      favorites: favoritesCount
+      favorites: favoritesCount,
+      matchRequests: matchRequestsCount
     });
 
   } catch (error) {

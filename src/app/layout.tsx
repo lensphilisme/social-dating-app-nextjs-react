@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import Providers from '@/components/Providers';
-import ProfessionalNav from '@/components/navigation/ProfessionalNav';
+import Navigation from '@/components/navigation/Navigation';
 import LoadingProvider from '@/components/providers/LoadingProvider';
 import type { Metadata } from 'next';
 import './globals.css';
@@ -54,8 +54,10 @@ export default async function RootLayout({
       <body className="font-sans antialiased">
         <LoadingProvider>
           <Providers userId={userId} profileComplete={profileComplete}>
-            <ProfessionalNav />
-            <main className="min-h-screen">{children}</main>
+            <Navigation />
+            <main className="relative">
+              {children}
+            </main>
           </Providers>
         </LoadingProvider>
       </body>

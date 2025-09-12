@@ -71,11 +71,10 @@ export default function MatchRequestsPage() {
     try {
       const result = await respondToMatchRequest(requestId, action, reason);
       
-      if (action === 'accept' && result.needsQuestions) {
-        // Show quiz modal
-        setRecipientQuestions(result.questions);
-        setPendingAcceptRequest(requestId);
-        setShowQuestionQuizModal(true);
+      if (action === 'accept') {
+        // For now, just reload the requests
+        // TODO: Implement question quiz functionality
+        loadMatchRequests();
         return;
       }
       
@@ -122,7 +121,7 @@ export default function MatchRequestsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pt-16 lg:pt-16 pb-16 lg:pb-0">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}

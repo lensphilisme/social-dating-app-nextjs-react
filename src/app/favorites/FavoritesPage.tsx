@@ -84,7 +84,7 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="love-gradient-bg min-h-screen p-4">
+    <div className="love-gradient-bg min-h-screen p-4 pt-20 pb-20">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">

@@ -120,7 +120,7 @@ export default function MessagesContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white pt-16 lg:pt-16 pb-16 lg:pb-0">
       {/* Header */}
       <div className="flex-shrink-0 bg-white border-b border-neutral-200 px-4 py-3">
         <div className="flex items-center justify-between">

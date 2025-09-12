@@ -14,6 +14,7 @@ import {
 import AudioRecorder from './AudioRecorder';
 import AudioPlayer from './AudioPlayer';
 import VideoPlayer from './VideoPlayer';
+import ProgressBar from '../ui/ProgressBar';
 
 interface MediaItem {
   id: string;
@@ -36,6 +37,8 @@ export default function MediaGallery({ userId, onMediaUpdate }: MediaGalleryProp
   const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const [selectedType, setSelectedType] = useState<'IMAGE' | 'VIDEO' | 'AUDIO' | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadingFile, setUploadingFile] = useState<string | null>(null);
 
   const isOwnProfile = !userId;
 
@@ -62,30 +65,64 @@ export default function MediaGallery({ userId, onMediaUpdate }: MediaGalleryProp
   const handleFileUpload = async (file: File, type: 'IMAGE' | 'VIDEO' | 'AUDIO', title?: string) => {
     if (!isOwnProfile) return;
 
-    try {
+    return new Promise<void>((resolve, reject) => {
       setIsUploading(true);
+      setUploadProgress(0);
+      setUploadingFile(file.name);
+
       const formData = new FormData();
       formData.append('file', file);
       formData.append('type', type);
       if (title) formData.append('title', title);
 
-      const response = await fetch('/api/media/upload', {
-        method: 'POST',
-        body: formData,
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const progress = (e.loaded / e.total) * 100;
+          setUploadProgress(progress);
+        }
       });
 
-      if (response.ok) {
-        await fetchMedia();
-        onMediaUpdate?.();
-      } else {
-        alert('Failed to upload media');
-      }
-    } catch (error) {
-      console.error('Error uploading media:', error);
-      alert('Error uploading media');
-    } finally {
-      setIsUploading(false);
-    }
+      xhr.addEventListener('load', async () => {
+        if (xhr.status === 200) {
+          try {
+            await fetchMedia();
+            onMediaUpdate?.();
+            setUploadProgress(100);
+            setTimeout(() => {
+              setIsUploading(false);
+              setUploadProgress(0);
+              setUploadingFile(null);
+              resolve();
+            }, 1000);
+          } catch (error) {
+            console.error('Error refreshing media:', error);
+            setIsUploading(false);
+            setUploadProgress(0);
+            setUploadingFile(null);
+            resolve();
+          }
+        } else {
+          alert('Failed to upload media');
+          setIsUploading(false);
+          setUploadProgress(0);
+          setUploadingFile(null);
+          reject(new Error('Upload failed'));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        alert('Error uploading media');
+        setIsUploading(false);
+        setUploadProgress(0);
+        setUploadingFile(null);
+        reject(new Error('Upload error'));
+      });
+
+      xhr.open('POST', '/api/media/upload');
+      xhr.send(formData);
+    });
   };
 
   const handleAudioSave = async (audioBlob: Blob, title: string) => {
@@ -270,11 +307,12 @@ export default function MediaGallery({ userId, onMediaUpdate }: MediaGalleryProp
                   className="w-full h-full"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-pink-100">
-                  <div className="text-center">
-                    <MicrophoneIcon className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                    <p className="text-xs text-purple-600 font-medium">{item.title}</p>
-                  </div>
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-pink-100 p-2">
+                  <AudioPlayer
+                    src={item.url}
+                    title={item.title}
+                    className="!bg-transparent !border-none !shadow-none !p-0 w-full"
+                  />
                 </div>
               )}
 
@@ -300,16 +338,6 @@ export default function MediaGallery({ userId, onMediaUpdate }: MediaGalleryProp
                 </div>
               )}
 
-              {/* Audio Player Overlay */}
-              {item.type === 'AUDIO' && (
-                <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/70">
-                  <AudioPlayer
-                    src={item.url}
-                    title={item.title}
-                    className="!bg-transparent !border-none !shadow-none !p-0"
-                  />
-                </div>
-              )}
             </motion.div>
           ))}
         </div>
@@ -317,11 +345,11 @@ export default function MediaGallery({ userId, onMediaUpdate }: MediaGalleryProp
 
       {/* Upload Progress */}
       {isUploading && (
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-          <div className="flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-            <span className="text-sm text-blue-700">Uploading media...</span>
-          </div>
+        <div className="mt-4">
+          <ProgressBar 
+            progress={uploadProgress} 
+            title={uploadingFile ? `Uploading ${uploadingFile}` : 'Uploading media...'}
+          />
         </div>
       )}
     </div>
