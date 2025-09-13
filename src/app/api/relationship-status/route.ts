@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const isLiked = await prisma.favorite.findFirst({
       where: {
         userId: currentUserId,
-        targetId: targetUserId
+        favoritedUserId: targetUserId
       }
     });
 
