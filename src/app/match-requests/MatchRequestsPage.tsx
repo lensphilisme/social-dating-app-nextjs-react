@@ -178,7 +178,7 @@ export default function MatchRequestsPage() {
                       <div className="flex items-center gap-4">
                         <Image
                           src={transformImageUrl(request.sender?.user.image) || '/images/user.png'}
-                          alt={request.sender?.name}
+                          alt={request.sender?.name || 'User'}
                           width={64}
                           height={64}
                           className="w-16 h-16 rounded-full object-cover"
@@ -252,7 +252,7 @@ export default function MatchRequestsPage() {
                       <div className="flex items-center gap-4">
                         <Image
                           src={transformImageUrl(request.recipient?.user.image) || '/images/user.png'}
-                          alt={request.recipient?.name}
+                          alt={request.recipient?.name || 'User'}
                           width={64}
                           height={64}
                           className="w-16 h-16 rounded-full object-cover"
