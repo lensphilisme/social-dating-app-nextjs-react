@@ -33,7 +33,10 @@ export default function ReferralValidationForm() {
         // Redirect to the main registration form
         router.push('/register/form');
       } else if (result.status === 'error') {
-        setError(result.error || 'Invalid referral code');
+        const errorMessage = Array.isArray(result.error) 
+          ? result.error.map(err => err.message).join(', ')
+          : result.error;
+        setError(errorMessage || 'Invalid referral code');
       } else {
         setError('Invalid referral code');
       }
