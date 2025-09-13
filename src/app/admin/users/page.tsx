@@ -4,10 +4,10 @@ import UserManagement from '@/components/admin/UserManagement';
 export const dynamic = 'force-dynamic';
 
 interface UserManagementPageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     search?: string;
-  };
+  }>;
 }
 
 export default async function UserManagementPage({ searchParams }: UserManagementPageProps) {

@@ -3,7 +3,7 @@ import ListsTab from './ListsTab';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ListsPage({ searchParams }: { searchParams: { type: string } }) {
+export default async function ListsPage({ searchParams }: { searchParams: Promise<{ type: string }> }) {
   const likeIds = await fetchCurrentUserLikeIds();
   const params = await searchParams;
   const members = await fetchLikedMembers(params.type);
