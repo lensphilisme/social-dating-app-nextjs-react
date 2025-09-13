@@ -24,7 +24,7 @@ interface TargetUser {
   dateOfBirth: Date;
   city: string;
   country: string;
-  image: string;
+  image: string | null;
   user: {
     name: string | null;
     image: string | null;
