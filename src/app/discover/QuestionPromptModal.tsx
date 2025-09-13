@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Member, Question } from '@prisma/client';
 import { transformImageUrl } from '@/lib/util';
+import Image from 'next/image';
 
 type Props = {
   member: Member;
@@ -141,9 +142,11 @@ export default function QuestionPromptModal({ member, questions, isOpen, onClose
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-white">
           <div className="flex items-center gap-4 mb-4">
-            <img
+            <Image
               src={transformImageUrl(member.image) || '/images/user.png'}
               alt={member.name}
+              width={64}
+              height={64}
               className="w-16 h-16 rounded-full object-cover border-2 border-white"
             />
             <div>

@@ -6,6 +6,7 @@ import { Card, CardBody, CardHeader } from '@nextui-org/react';
 import Link from 'next/link';
 import { transformImageUrl } from '@/lib/util';
 import { toast } from 'react-toastify';
+import Image from 'next/image';
 
 interface Favorite {
   id: string;
@@ -126,11 +127,14 @@ export default function FavoritesPage() {
                   <CardBody className="p-0">
                     <div className="relative">
                       <Link href={`/members/${favorite.member.userId}`}>
-                        <img
-                          src={transformImageUrl(favorite.member.image) || '/images/user.png'}
-                          alt={favorite.member.name}
-                          className="w-full h-64 object-cover rounded-t-lg cursor-pointer"
-                        />
+                        <div className="relative w-full h-64 rounded-t-lg overflow-hidden">
+                          <Image
+                            src={transformImageUrl(favorite.member.image) || '/images/user.png'}
+                            alt={favorite.member.name}
+                            fill
+                            className="object-cover cursor-pointer"
+                          />
+                        </div>
                       </Link>
                       <div className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 rounded-full text-sm font-semibold">
                         ❤️

@@ -8,8 +8,22 @@ import ConditionalMainPadding from '@/components/ConditionalMainPadding';
 import AdminNavigation from '@/components/admin/AdminNavigation';
 import AnnouncementProvider from '@/components/AnnouncementProvider';
 import type { Metadata } from 'next';
+import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
 import './theme-overrides.css';
+
+const inter = Inter({ 
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const poppins = Poppins({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  variable: '--font-poppins',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'LoveConnect - Find Your Perfect Match',
@@ -52,14 +66,7 @@ export default async function RootLayout({
 
   return (
     <html lang='en' className="scroll-smooth">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-        {/* Additional Google Fonts for theme picker */}
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&family=Lato:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700&family=Source+Sans+Pro:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=Ubuntu:wght@300;400;500;600;700&family=Playfair+Display:wght@300;400;500;600;700&family=Merriweather:wght@300;400;500;600;700&family=Lora:wght@300;400;500;600;700&family=Crimson+Text:wght@300;400;500;600;700&family=Libre+Baskerville:wght@300;400;500;600;700&family=Dancing+Script:wght@300;400;500;600;700&family=Pacifico:wght@300;400;500;600;700&family=Caveat:wght@300;400;500;600;700&family=Kalam:wght@300;400;500;600;700&family=Satisfy:wght@300;400;500;600;700&family=Fira+Code:wght@300;400;500;600;700&family=Source+Code+Pro:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Inconsolata:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-sans antialiased" suppressHydrationWarning={true}>
+      <body className={`${inter.variable} ${poppins.variable} font-sans antialiased`} suppressHydrationWarning={true}>
         <ThemeWrapper>
           <LoadingProvider>
             <Providers userId={userId} profileComplete={profileComplete}>

@@ -6,6 +6,7 @@ import { calculateAge, transformImageUrl } from '@/lib/util';
 import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import HeartAnimation from '@/components/ui/HeartAnimation';
 import CheckAnimation from '@/components/ui/CheckAnimation';
+import Image from 'next/image';
 
 type Props = {
   member: Member;
@@ -69,10 +70,11 @@ export default function SwipeCard({ member, index, onSwipe, onMatchRequest, isTo
     >
       {/* Profile Image */}
       <div className="relative h-full">
-        <img
+        <Image
           src={transformImageUrl(member.image) || '/images/user.png'}
           alt={member.name}
-          className="w-full h-full object-cover"
+          fill
+          className="object-cover"
         />
         
         {/* Dark Gradient Overlay */}
