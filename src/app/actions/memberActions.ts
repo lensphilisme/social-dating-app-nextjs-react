@@ -22,7 +22,7 @@ export async function getMembers(searchParams: GetMemberParams): Promise<Paginat
   const minDob = addYears(currentDate, -maxAge - 1);
   const maxDob = addYears(currentDate, -minAge);
 
-  const selectedGender = gender.split(',').map(g => g.toUpperCase());
+  const selectedGender = gender.split(',').map(g => g.toUpperCase()) as any[];
 
   const page = parseInt(pageNumber);
   const limit = parseInt(pageSize);
