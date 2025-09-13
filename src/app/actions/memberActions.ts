@@ -56,6 +56,13 @@ export async function getMembers(searchParams: GetMemberParams): Promise<Paginat
           userId,
         },
       },
+      include: {
+        user: {
+          select: {
+            emailVerified: true
+          }
+        }
+      },
       orderBy: { [orderBy]: 'desc' },
       skip,
       take: limit,

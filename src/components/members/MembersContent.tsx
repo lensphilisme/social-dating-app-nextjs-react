@@ -18,6 +18,9 @@ import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { getMembers } from '@/app/actions/memberActions';
 import { Member } from '@prisma/client';
 import { calculateAge, transformImageUrl } from '@/lib/util';
+import usePresenceStore from '@/hooks/usePresenceStore';
+import { trackProfileView } from '@/app/actions/profileViewActions';
+import ModernMemberCard from './ModernMemberCard';
 
 // Using the Prisma Member type from imports
 
@@ -39,6 +42,7 @@ export default function MembersContent() {
   const [likedMembers, setLikedMembers] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
+  const onlineMembers = usePresenceStore((state) => state.members);
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     ageRange: [18, 65],
@@ -116,16 +120,14 @@ export default function MembersContent() {
         return false;
       }
 
-      // Online filter (mock for now - you can implement real online status)
+      // Online filter - use real presence data
       if (filters.isOnline) {
-        // For now, assume all members are online
-        return true;
+        return onlineMembers.includes(member.userId);
       }
 
-      // Verified filter (mock for now - you can implement real verification)
+      // Verified filter - use email verification status
       if (filters.isVerified) {
-        // For now, assume all members are verified
-        return true;
+        return (member as any).user?.emailVerified !== null;
       }
 
       return true;
@@ -159,6 +161,13 @@ export default function MembersContent() {
     });
   };
 
+  const handleMemberClick = async (memberId: string) => {
+    // Track profile view
+    await trackProfileView(memberId);
+    // Navigate to profile
+    window.location.href = `/members/${memberId}`;
+  };
+
   const clearFilters = () => {
     setFilters({
       search: '',
@@ -180,7 +189,7 @@ export default function MembersContent() {
   );
 
   return (
-    <div className="min-h-screen bg-neutral-50 pt-16 lg:pt-16 pb-16 lg:pb-0">
+    <div className="min-h-screen bg-gray-50 pt-16 lg:pt-16 pb-16 lg:pb-0">
       {/* Header */}
       <div className="bg-white border-b border-neutral-200 px-4 py-4">
         <div className="flex items-center justify-between mb-4">
@@ -377,54 +386,18 @@ export default function MembersContent() {
             <p className="text-neutral-600">Try adjusting your filters to see more results</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredMembers.map((member) => (
-              <motion.div
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredMembers.map((member, index) => (
+              <ModernMemberCard
                 key={member.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl shadow-soft hover:shadow-medium transition-all duration-300 overflow-hidden cursor-pointer"
-                onClick={() => window.location.href = `/members/${member.userId}`}
-              >
-                <div className="relative">
-                  <img
-                    src={transformImageUrl(member.image) || '/images/user.png'}
-                    alt={member.name}
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="absolute top-3 right-3 flex space-x-2">
-                    {/* Online status - you can implement real online status later */}
-                    <div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                    {/* Verification status - you can implement real verification later */}
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">✓</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLike(member.userId);
-                    }}
-                    className="absolute bottom-3 right-3 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors"
-                  >
-                    {likedMembers.has(member.userId) ? (
-                      <HeartIconSolid className="w-5 h-5 text-red-500" />
-                    ) : (
-                      <HeartIcon className="w-5 h-5 text-neutral-600" />
-                    )}
-                  </button>
-                </div>
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-neutral-900">{member.name}</h3>
-                    <span className="text-sm text-neutral-500">{calculateAge(member.dateOfBirth)}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-neutral-600">
-                    <MapPinIcon className="w-4 h-4 mr-1" />
-                    {member.city}, {member.country}
-                  </div>
-                </div>
-              </motion.div>
+                member={member}
+                isLiked={likedMembers.has(member.userId)}
+                isOnline={onlineMembers.includes(member.userId)}
+                isVerified={(member as any).user?.emailVerified || false}
+                onLike={handleLike}
+                onClick={handleMemberClick}
+                index={index}
+              />
             ))}
           </div>
         )}

@@ -1,39 +1,72 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from '@/auth';
+import { getToken } from 'next-auth/jwt';
 
-export default async function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  
+  // Skip middleware for static files and API routes
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/static') ||
+    pathname.includes('.')
+  ) {
+    return NextResponse.next();
+  }
 
-  // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/register/referral', '/', '/api/auth', '/_next', '/favicon.ico'];
-  
-  // Check if the current path is a public route
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-  
-  // Skip middleware for public routes
-  if (isPublicRoute) {
+  // Skip middleware for auth pages
+  if (pathname.startsWith('/auth')) {
+    return NextResponse.next();
+  }
+
+  // Skip middleware for maintenance page itself
+  if (pathname === '/maintenance') {
     return NextResponse.next();
   }
 
   try {
-    const session = await auth();
-    
-    // If user is not authenticated and trying to access protected route
-    if (!session) {
-      return NextResponse.redirect(new URL('/login', request.url));
-    }
-    
-    // If user is authenticated and trying to access login/register, redirect to discover
-    if (session && (pathname === '/login' || pathname === '/register')) {
-      return NextResponse.redirect(new URL('/discover', request.url));
-    }
+    // Check if maintenance mode is enabled
+    const maintenanceResponse = await fetch(`${request.nextUrl.origin}/api/maintenance/check`, {
+      headers: {
+        'Cookie': request.headers.get('cookie') || '',
+      },
+    });
 
-    return NextResponse.next();
+    if (maintenanceResponse.ok) {
+      const { maintenanceMode } = await maintenanceResponse.json();
+      
+      if (maintenanceMode) {
+        // Check if user is admin
+        const token = await getToken({ 
+          req: request, 
+          secret: process.env.NEXTAUTH_SECRET 
+        });
+
+        const isAdmin = token?.role === 'ADMIN';
+        
+        // Allow admin access to admin routes even during maintenance
+        if (isAdmin && pathname.startsWith('/admin')) {
+          return NextResponse.next();
+        }
+        
+        // Allow admin access to login page during maintenance
+        if (isAdmin && pathname === '/auth/signin') {
+          return NextResponse.next();
+        }
+        
+        // Redirect all other users to maintenance page
+        if (!isAdmin) {
+          return NextResponse.redirect(new URL('/maintenance', request.url));
+        }
+      }
+    }
   } catch (error) {
-    console.error('Middleware auth error:', error);
-    return NextResponse.redirect(new URL('/login', request.url));
+    console.error('Middleware error:', error);
+    // Continue if there's an error checking maintenance mode
   }
+
+  return NextResponse.next();
 }
 
 export const config = {

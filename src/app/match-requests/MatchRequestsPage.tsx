@@ -71,10 +71,17 @@ export default function MatchRequestsPage() {
     try {
       const result = await respondToMatchRequest(requestId, action, reason);
       
+      if (action === 'accept' && result.needsQuestions && result.questions) {
+        // Show quiz modal
+        setRecipientQuestions(result.questions);
+        setPendingAcceptRequest(requestId);
+        setShowQuestionQuizModal(true);
+        return;
+      }
+      
       if (action === 'accept') {
-        // For now, just reload the requests
-        // TODO: Implement question quiz functionality
-        loadMatchRequests();
+        // Direct accept without questions
+        loadRequests();
         return;
       }
       
@@ -121,7 +128,7 @@ export default function MatchRequestsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16 lg:pt-16 pb-16 lg:pb-0">
+    <div className="min-h-screen bg-gray-50 pb-16 lg:pb-0">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -365,6 +372,7 @@ export default function MatchRequestsPage() {
               setRecipientQuestions([]);
             }}
             onSubmit={handleQuizSubmit}
+            redirectAfterSubmit="/discover"
           />
         </div>
       </div>

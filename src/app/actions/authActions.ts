@@ -194,12 +194,20 @@ export async function getUserById(id: string) {
 }
 
 export async function getAuthUserId() {
-  const session = await auth();
-  const userId = session?.user?.id;
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
 
-  if (!userId) throw new Error('Unauthorised');
+    if (!userId) {
+      console.error('No user ID found in session:', session);
+      throw new Error('Unauthorised');
+    }
 
-  return userId;
+    return userId;
+  } catch (error) {
+    console.error('Error getting auth user ID:', error);
+    throw new Error('Unauthorised');
+  }
 }
 
 export async function verifyEmail(token: string): Promise<ActionResult<string>> {

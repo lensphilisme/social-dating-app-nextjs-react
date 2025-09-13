@@ -1,16 +1,19 @@
+import { getModerationQueue } from '@/app/actions/adminSystemActions';
 import { getUnapprovedPhotos } from '@/app/actions/adminActions';
-import MemberPhotos from '@/components/MemberPhotos';
-import { Divider } from '@nextui-org/react';
+import AdvancedModeration from '@/components/admin/AdvancedModeration';
 
 export const dynamic = 'force-dynamic';
 
-export default async function PhotoModerationPage() {
-  const photos = await getUnapprovedPhotos();
+export default async function ModerationPage() {
+  const [moderationQueue, unapprovedPhotos] = await Promise.all([
+    getModerationQueue('PENDING', undefined, 1, 50),
+    getUnapprovedPhotos()
+  ]);
+
   return (
-    <div className='flex flex-col mt-10 gap-3'>
-      <h3 className='text-2xl'>Photos awaiting moderation</h3>
-      <Divider />
-      <MemberPhotos photos={photos} />
-    </div>
+    <AdvancedModeration 
+      moderationQueue={moderationQueue}
+      unapprovedPhotos={unapprovedPhotos}
+    />
   );
 }

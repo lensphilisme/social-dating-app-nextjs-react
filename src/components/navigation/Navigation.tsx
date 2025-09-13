@@ -18,7 +18,9 @@ import {
   ChartBarIcon,
   StarIcon,
   QuestionMarkCircleIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  DocumentTextIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 import { 
   HomeIcon as HomeIconSolid, 
@@ -27,12 +29,14 @@ import {
   UserGroupIcon as UserGroupIconSolid,
   MagnifyingGlassIcon as MagnifyingGlassIconSolid,
   HandRaisedIcon as HandRaisedIconSolid,
-  ChartBarIcon as ChartBarIconSolid,
   StarIcon as StarIconSolid,
+  ChartBarIcon as ChartBarIconSolid,
   QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
-  Cog6ToothIcon as Cog6ToothIconSolid
+  Cog6ToothIcon as Cog6ToothIconSolid,
+  DocumentTextIcon as DocumentTextIconSolid
 } from '@heroicons/react/24/solid';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
+import NotificationPopup from '../NotificationPopup';
 
 interface NavItem {
   name: string;
@@ -41,6 +45,7 @@ interface NavItem {
   iconSolid: any;
   badge?: number;
   isMain?: boolean;
+  key?: string;
 }
 
 interface NotificationCounts {
@@ -51,8 +56,7 @@ interface NotificationCounts {
 }
 
 export default function Navigation() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [notificationCounts, setNotificationCounts] = useState<NotificationCounts>({
     matches: 0,
     messages: 0,
@@ -62,6 +66,72 @@ export default function Navigation() {
   const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
   const { data: session } = useSession();
+
+  // All navigation items
+  const [navSettings, setNavSettings] = useState<any>({});
+
+  // Fetch navigation settings
+  useEffect(() => {
+    const fetchNavSettings = async () => {
+      try {
+        const response = await fetch('/api/navigation/settings');
+        if (response.ok) {
+          const settings = await response.json();
+          setNavSettings(settings);
+        }
+      } catch (error) {
+        console.error('Error fetching navigation settings:', error);
+      }
+    };
+
+    fetchNavSettings();
+
+    // Listen for navigation settings updates
+    const handleNavUpdate = () => {
+      fetchNavSettings();
+    };
+
+    window.addEventListener('navigationSettingsUpdated', handleNavUpdate);
+    return () => window.removeEventListener('navigationSettingsUpdated', handleNavUpdate);
+  }, []);
+
+  const allNavItems: NavItem[] = [
+    { name: 'Home', href: '/', icon: HomeIcon, iconSolid: HomeIconSolid, isMain: true, key: 'nav_home_visible' },
+    { name: 'Discover', href: '/discover', icon: MagnifyingGlassIcon, iconSolid: MagnifyingGlassIconSolid, isMain: true, key: 'nav_discover_visible' },
+    { name: 'Matches', href: '/matches', icon: HeartIcon, iconSolid: HeartIconSolid, badge: notificationCounts.matches, isMain: true, key: 'nav_matches_visible' },
+    { name: 'Messages', href: '/messages', icon: ChatBubbleLeftRightIcon, iconSolid: ChatIconSolid, badge: notificationCounts.messages, isMain: true, key: 'nav_messages_visible' },
+    { name: 'Members', href: '/members', icon: UserGroupIcon, iconSolid: UserGroupIconSolid, isMain: false, key: 'nav_members_visible' },
+    { name: 'Favorites', href: '/favorites', icon: StarIcon, iconSolid: StarIconSolid, badge: notificationCounts.favorites, isMain: false, key: 'nav_favorites_visible' },
+    { name: 'Match Requests', href: '/match-requests', icon: HandRaisedIcon, iconSolid: HandRaisedIconSolid, badge: notificationCounts.matchRequests, isMain: false, key: 'nav_match_requests_visible' },
+    { name: 'Dashboard', href: '/dashboard', icon: ChartBarIcon, iconSolid: ChartBarIconSolid, isMain: false, key: 'nav_dashboard_visible' },
+    { name: 'Questions', href: '/questions', icon: QuestionMarkCircleIcon, iconSolid: QuestionMarkCircleIconSolid, isMain: false, key: 'nav_questions_visible' },
+    { name: 'Settings', href: '/settings', icon: Cog6ToothIcon, iconSolid: Cog6ToothIconSolid, isMain: false, key: 'nav_settings_visible' },
+    { name: 'My Reports', href: '/reports', icon: DocumentTextIcon, iconSolid: DocumentTextIconSolid, isMain: false, key: 'nav_reports_visible' },
+  ];
+
+  // Filter and sort navigation items based on settings
+  const filteredNavItems = allNavItems
+    .filter(item => {
+      const isVisible = item.key ? navSettings[item.key] !== 'false' : true;
+      return isVisible;
+    })
+    .sort((a, b) => {
+      if (!a.key || !b.key) return 0;
+      const aOrderKey = `${a.key.replace('_visible', '')}_order`;
+      const bOrderKey = `${b.key.replace('_visible', '')}_order`;
+      const aOrder = parseInt(navSettings[aOrderKey] || '1');
+      const bOrder = parseInt(navSettings[bOrderKey] || '1');
+      return aOrder - bOrder;
+    });
+
+  const mainNavItems = filteredNavItems.filter(item => item.isMain);
+  const additionalNavItems = filteredNavItems.filter(item => !item.isMain);
+
+  // Save sidebar state to localStorage and dispatch events
+  useEffect(() => {
+    localStorage.setItem('sidebarOpen', JSON.stringify(sidebarOpen));
+    window.dispatchEvent(new CustomEvent('sidebarToggle'));
+  }, [sidebarOpen]);
 
   // Fetch notification counts from database
   useEffect(() => {
@@ -85,35 +155,15 @@ export default function Navigation() {
     };
 
     fetchNotificationCounts();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchNotificationCounts, 30000);
-    return () => clearInterval(interval);
   }, [session?.user?.id]);
 
-  // All navigation items
-  const allNavItems: NavItem[] = [
-    { name: 'Home', href: '/', icon: HomeIcon, iconSolid: HomeIconSolid, isMain: true },
-    { name: 'Discover', href: '/discover', icon: MagnifyingGlassIcon, iconSolid: MagnifyingGlassIconSolid, isMain: true },
-    { name: 'Matches', href: '/matches', icon: HeartIcon, iconSolid: HeartIconSolid, badge: notificationCounts.matches, isMain: true },
-    { name: 'Messages', href: '/messages', icon: ChatBubbleLeftRightIcon, iconSolid: ChatIconSolid, badge: notificationCounts.messages, isMain: true },
-    { name: 'Members', href: '/members', icon: UserGroupIcon, iconSolid: UserGroupIconSolid, isMain: false },
-    { name: 'Favorites', href: '/favorites', icon: StarIcon, iconSolid: StarIconSolid, badge: notificationCounts.favorites, isMain: false },
-    { name: 'Match Requests', href: '/match-requests', icon: HandRaisedIcon, iconSolid: HandRaisedIconSolid, badge: notificationCounts.matchRequests, isMain: false },
-    { name: 'Dashboard', href: '/dashboard', icon: ChartBarIcon, iconSolid: ChartBarIconSolid, isMain: false },
-    { name: 'Questions', href: '/questions', icon: QuestionMarkCircleIcon, iconSolid: QuestionMarkCircleIconSolid, isMain: false },
-    { name: 'Settings', href: '/settings', icon: Cog6ToothIcon, iconSolid: Cog6ToothIconSolid, isMain: false },
-  ];
+  // Check if user is admin
+  const isAdmin = session?.user?.role === 'ADMIN';
 
-  const mainNavItems = allNavItems.filter(item => item.isMain);
-  const additionalNavItems = allNavItems.filter(item => !item.isMain);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  // Hide user navigation for admin users (they use AdminNavigation)
+  if (isAdmin) {
+    return null;
+  }
 
   const isActive = (href: string) => pathname === href;
 
@@ -122,11 +172,7 @@ export default function Navigation() {
     return (
       <>
         {/* Top Navbar for Non-Logged Users - Logo Only */}
-        <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled 
-            ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-neutral-200/50' 
-            : 'bg-transparent'
-        }`}>
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-lg border-b border-neutral-200/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-center h-16">
               {/* Logo */}
@@ -139,359 +185,275 @@ export default function Navigation() {
             </div>
           </div>
         </nav>
-
       </>
     );
   }
 
-  // For logged-in users, show full navigation
+  // For logged-in users, show sidebar navigation
   return (
     <>
-      {/* Desktop Top Navigation */}
-      <nav className={`hidden lg:block fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-neutral-200/50' 
-          : 'bg-transparent'
-      }`}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2 group">
-              <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+      {/* Mobile sidebar */}
+      <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-y-0 left-0 flex w-80 flex-col bg-white shadow-xl">
+          <div className="flex h-16 items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center">
                 <HeartIcon className="w-5 h-5 text-white" />
               </div>
-              <span className="font-display font-bold text-xl text-neutral-900 group-hover:text-pink-600 transition-colors">LoveConnect</span>
-            </Link>
-
-            {/* Main Navigation Links */}
-            <div className="flex items-center space-x-1">
+              <h1 className="text-xl font-bold text-gray-900">LoveConnect</h1>
+            </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <XMarkIcon className="w-6 h-6" />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto pb-20">
+            {/* Main Navigation */}
+            <div className="p-4">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Main</div>
+              <nav className="space-y-1 pointer-events-auto">
               {mainNavItems.map((item) => {
                 const Icon = isActive(item.href) ? item.iconSolid : item.icon;
                 const hasNotification = item.badge && item.badge > 0;
-                const isDotItem = item.name === 'Matches' || item.name === 'Messages';
-                
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`relative flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 group ${
+                      className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                       isActive(item.href)
-                        ? 'text-pink-600 bg-pink-50 shadow-sm'
-                        : 'text-neutral-600 hover:text-pink-600 hover:bg-neutral-50'
-                    }`}
-                  >
-                    <Icon className={`w-5 h-5 transition-transform duration-200 ${
-                      isActive(item.href) ? 'scale-110' : 'group-hover:scale-105'
-                    }`} />
-                    <span className="font-medium">{item.name}</span>
-                    
-                    {/* Notification Indicator - Only dots for Matches and Messages when there are new notifications */}
-                    {!isLoading && hasNotification && isDotItem && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-sm animate-pulse"></span>
+                          ? 'bg-pink-100 text-pink-700'
+                          : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <Icon
+                        className={`mr-3 h-5 w-5 ${
+                          isActive(item.href) ? 'text-pink-500' : 'text-gray-400 group-hover:text-gray-500'
+                        }`}
+                      />
+                      {item.name}
+                      {hasNotification && (
+                        <span className="ml-auto w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></span>
                     )}
                   </Link>
                 );
               })}
+              </nav>
             </div>
 
-            {/* User Menu */}
-            <div className="flex items-center space-x-2">
-              <Link
-                href="/notifications"
-                className="relative p-2 text-neutral-600 hover:text-pink-600 hover:bg-neutral-50 rounded-xl transition-all duration-200"
-              >
-                <BellIcon className="w-5 h-5" />
-                {!isLoading && notificationCounts.matches + notificationCounts.messages + notificationCounts.matchRequests > 0 && (
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></span>
-                )}
-              </Link>
-              
-              <Link
-                href="/profile"
-                className="flex items-center space-x-2 px-3 py-2 text-neutral-600 hover:text-pink-600 hover:bg-neutral-50 rounded-xl transition-all duration-200"
-              >
-                <UserIcon className="w-5 h-5" />
-                <span className="font-medium">Profile</span>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Desktop Sidebar for Large Screens */}
-      <aside className="hidden xl:block fixed left-0 top-16 bottom-0 w-72 bg-white/95 backdrop-blur-md border-r border-neutral-200/50 shadow-lg z-40">
-        <div className="p-6">
-          <nav className="space-y-2">
-            <div className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-4">More Features</div>
+            {/* Additional Navigation */}
+            <div className="p-4">
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">More</div>
+              <nav className="space-y-1 pointer-events-auto">
             {additionalNavItems.map((item) => {
               const Icon = isActive(item.href) ? item.iconSolid : item.icon;
               const hasNotification = item.badge && item.badge > 0;
-              const isFavorites = item.name === 'Favorites';
-              
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`relative flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                      className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                     isActive(item.href)
-                      ? 'text-pink-600 bg-pink-50 border border-pink-200 shadow-sm'
-                      : 'text-neutral-600 hover:text-pink-600 hover:bg-neutral-50'
-                  }`}
-                >
-                  <Icon className={`w-5 h-5 transition-transform duration-200 ${
-                    isActive(item.href) ? 'scale-110' : 'group-hover:scale-105'
-                  }`} />
-                  <span className="font-medium">{item.name}</span>
-                  
-                  {/* Notification Indicator - Numbers only for Favorites when there are items */}
-                  {!isLoading && hasNotification && isFavorites && (
-                    <span className="ml-auto w-6 h-6 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs flex items-center justify-center font-bold shadow-sm rounded-full">
-                      {item.badge}
-                    </span>
-                  )}
-                  
-                  {/* Dot for other items when there are new notifications */}
-                  {!isLoading && hasNotification && !isFavorites && (
-                    <span className="ml-auto w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-sm animate-pulse"></span>
+                          ? 'bg-pink-100 text-pink-700'
+                          : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <Icon
+                        className={`mr-3 h-5 w-5 ${
+                          isActive(item.href) ? 'text-pink-500' : 'text-gray-400 group-hover:text-gray-500'
+                        }`}
+                      />
+                      {item.name}
+                      {hasNotification && (
+                        <span className="ml-auto w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></span>
                   )}
                 </Link>
               );
             })}
           </nav>
         </div>
-      </aside>
+          </div>
 
-      {/* Mobile Hamburger Menu */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50">
-        <nav className={`transition-all duration-300 ${
-          isScrolled 
-            ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-neutral-200/50' 
-            : 'bg-transparent'
-        }`}>
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between">
-              {/* Logo */}
-              <Link href="/" className="flex items-center space-x-2 group">
-                <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <HeartIcon className="w-5 h-5 text-white" />
+          {/* User info and logout */}
+          <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
+                <UserIcon className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {session?.user?.name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {session?.user?.email}
+                </p>
+              </div>
                 </div>
-                <span className="font-display font-bold text-xl text-neutral-900 group-hover:text-pink-600 transition-colors">LoveConnect</span>
-              </Link>
 
-              {/* Hamburger Button */}
               <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="p-2 text-neutral-600 hover:text-pink-600 hover:bg-neutral-50 rounded-xl transition-all duration-200"
-              >
-                {isOpen ? <XMarkIcon className="w-6 h-6" /> : <Bars3Icon className="w-6 h-6" />}
+              onClick={() => {
+                signOut({ callbackUrl: '/auth/signin' });
+                setSidebarOpen(false);
+              }}
+              className="w-full flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <ArrowRightOnRectangleIcon className="mr-3 h-5 w-5" />
+              Logout
               </button>
             </div>
           </div>
-        </nav>
+      </div>
 
-        {/* Mobile Menu */}
-        <AnimatePresence>
-          {isOpen && (
-            <>
-              {/* Backdrop */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 z-40"
-                onClick={() => setIsOpen(false)}
-              />
-              
-              {/* Menu Panel */}
-              <motion.div
-                initial={{ x: '-100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '-100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed top-0 left-0 bottom-0 w-80 bg-white shadow-2xl z-50"
-              >
-                <div className="p-6">
-                  {/* Menu Header */}
-                  <div className="flex items-center justify-between mb-8">
-                    <Link href="/" className="flex items-center space-x-2" onClick={() => setIsOpen(false)}>
+      {/* Desktop sidebar */}
+      <div className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col bg-white border-r border-gray-200 shadow-lg transition-all duration-300 z-30 pointer-events-auto ${
+        sidebarOpen ? 'lg:w-80' : 'lg:w-16'
+      }`}>
+        {/* Logo */}
+        <div className="flex h-16 items-center px-4 border-b border-gray-200">
+          <div className="flex items-center space-x-2">
                       <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center">
                         <HeartIcon className="w-5 h-5 text-white" />
                       </div>
-                      <span className="font-display font-bold text-xl text-neutral-900">LoveConnect</span>
-                    </Link>
-                    <button
-                      onClick={() => setIsOpen(false)}
-                      className="p-2 text-neutral-600 hover:text-pink-600 hover:bg-neutral-50 rounded-xl transition-all duration-200"
-                    >
-                      <XMarkIcon className="w-5 h-5" />
-                    </button>
+            {sidebarOpen && <h1 className="text-xl font-bold text-gray-900">LoveConnect</h1>}
+          </div>
                   </div>
 
-                  {/* Main Navigation Links */}
-                  <nav className="space-y-2">
-                    <div className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">Main</div>
-                    {mainNavItems.map((item, index) => {
+        <div className="flex-1 overflow-y-auto relative">
+          {/* Main Navigation */}
+          <div className="p-4">
+            {sidebarOpen && <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Main</div>}
+            <nav className="space-y-1 pointer-events-auto">
+              {mainNavItems.map((item) => {
                       const Icon = isActive(item.href) ? item.iconSolid : item.icon;
                       const hasNotification = item.badge && item.badge > 0;
-                      const isDotItem = item.name === 'Matches' || item.name === 'Messages';
-                      
                       return (
-                        <motion.div
+                  <Link
                           key={item.name}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                        >
-                          <Link
                             href={item.href}
-                            onClick={() => setIsOpen(false)}
-                            className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                               isActive(item.href)
-                                ? 'text-pink-600 bg-pink-50 border border-pink-200 shadow-sm'
-                                : 'text-neutral-600 hover:text-pink-600 hover:bg-neutral-50'
-                            }`}
-                          >
-                            <Icon className={`w-5 h-5 transition-transform duration-200 ${
-                              isActive(item.href) ? 'scale-110' : 'group-hover:scale-105'
-                            }`} />
-                            <span className="font-medium">{item.name}</span>
-                            
-                            {/* Notification Indicator - Only dots for Matches and Messages when there are new notifications */}
-                            {!isLoading && hasNotification && isDotItem && (
-                              <span className="ml-auto w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-sm animate-pulse"></span>
-                            )}
-                          </Link>
-                        </motion.div>
-                      );
-                    })}
-                  </nav>
-
-                  {/* Additional Navigation Links */}
-                  <nav className="space-y-2 mt-6">
-                    <div className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3">More</div>
-                    {additionalNavItems.map((item, index) => {
-                      const Icon = isActive(item.href) ? item.iconSolid : item.icon;
-                      const hasNotification = item.badge && item.badge > 0;
-                      const isFavorites = item.name === 'Favorites';
-                      
-                      return (
-                        <motion.div
-                          key={item.name}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: (index + mainNavItems.length) * 0.1 }}
-                        >
-                          <Link
-                            href={item.href}
-                            onClick={() => setIsOpen(false)}
-                            className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-                              isActive(item.href)
-                                ? 'text-pink-600 bg-pink-50 border border-pink-200 shadow-sm'
-                                : 'text-neutral-600 hover:text-pink-600 hover:bg-neutral-50'
-                            }`}
-                          >
-                            <Icon className={`w-5 h-5 transition-transform duration-200 ${
-                              isActive(item.href) ? 'scale-110' : 'group-hover:scale-105'
-                            }`} />
-                            <span className="font-medium">{item.name}</span>
-                            
-                            {/* Notification Indicator - Numbers only for Favorites when there are items */}
-                            {!isLoading && hasNotification && isFavorites && (
-                              <span className="ml-auto w-6 h-6 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs flex items-center justify-center font-bold shadow-sm rounded-full">
-                                {item.badge}
-                              </span>
-                            )}
-                            
-                            {/* Dot for other items when there are new notifications */}
-                            {!isLoading && hasNotification && !isFavorites && (
-                              <span className="ml-auto w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-sm animate-pulse"></span>
-                            )}
-                          </Link>
-                        </motion.div>
-                      );
-                    })}
-                  </nav>
-
-                  {/* Additional Links */}
-                  <div className="mt-8 pt-6 border-t border-neutral-200">
-                    <div className="space-y-2">
-                      <Link
-                        href="/notifications"
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center space-x-3 px-4 py-3 text-neutral-600 hover:text-pink-600 hover:bg-neutral-50 rounded-xl transition-all duration-200"
-                      >
-                        <BellIcon className="w-5 h-5" />
-                        <span className="font-medium">Notifications</span>
-                        {!isLoading && notificationCounts.matches + notificationCounts.messages + notificationCounts.matchRequests > 0 && (
+                        ? 'bg-pink-100 text-pink-700'
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                    title={!sidebarOpen ? item.name : undefined}
+                  >
+                    <Icon
+                      className={`h-5 w-5 ${
+                        isActive(item.href) ? 'text-pink-500' : 'text-gray-400 group-hover:text-gray-500'
+                      } ${sidebarOpen ? 'mr-3' : 'mx-auto'}`}
+                    />
+                    {sidebarOpen && (
+                      <>
+                        {item.name}
+                        {hasNotification && (
                           <span className="ml-auto w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></span>
                         )}
-                      </Link>
-                      
-                      <Link
-                        href="/profile"
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center space-x-3 px-4 py-3 text-neutral-600 hover:text-pink-600 hover:bg-neutral-50 rounded-xl transition-all duration-200"
-                      >
-                        <UserIcon className="w-5 h-5" />
-                        <span className="font-medium">Profile</span>
-                      </Link>
+                      </>
+                            )}
+                          </Link>
+                      );
+                    })}
+                  </nav>
+          </div>
+
+          {/* Additional Navigation */}
+          <div className="p-4">
+            {sidebarOpen && <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">More</div>}
+            <nav className="space-y-1 pointer-events-auto">
+              {additionalNavItems.map((item) => {
+                      const Icon = isActive(item.href) ? item.iconSolid : item.icon;
+                      const hasNotification = item.badge && item.badge > 0;
+                      return (
+                  <Link
+                          key={item.name}
+                            href={item.href}
+                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                              isActive(item.href)
+                        ? 'bg-pink-100 text-pink-700'
+                        : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                    title={!sidebarOpen ? item.name : undefined}
+                  >
+                    <Icon
+                      className={`h-5 w-5 ${
+                        isActive(item.href) ? 'text-pink-500' : 'text-gray-400 group-hover:text-gray-500'
+                      } ${sidebarOpen ? 'mr-3' : 'mx-auto'}`}
+                    />
+                    {sidebarOpen && (
+                      <>
+                        {item.name}
+                        {hasNotification && (
+                          <span className="ml-auto w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse"></span>
+                        )}
+                      </>
+                            )}
+                          </Link>
+                      );
+                    })}
+                  </nav>
                     </div>
                   </div>
+
+        {/* User info and logout */}
+        <div className="flex-shrink-0 p-4 border-t border-gray-200">
+          <div className="flex items-center space-x-3 mb-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
+              <UserIcon className="w-6 h-6 text-white" />
+            </div>
+            {sidebarOpen && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {session?.user?.name || 'User'}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {session?.user?.email}
+                </p>
                 </div>
-              </motion.div>
-            </>
           )}
-        </AnimatePresence>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/98 backdrop-blur-xl border-t border-neutral-200/60 shadow-lg">
-        <div className="flex items-center justify-around py-1">
-          {mainNavItems.map((item) => {
-            const Icon = isActive(item.href) ? item.iconSolid : item.icon;
-            const hasNotification = item.badge && item.badge > 0;
-            const isDotItem = item.name === 'Matches' || item.name === 'Messages';
-            
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`relative flex flex-col items-center justify-center px-2 py-2 rounded-xl transition-all duration-300 group ${
-                  isActive(item.href)
-                    ? 'text-pink-600 bg-pink-50/80 scale-105'
-                    : 'text-neutral-600 hover:text-pink-600 hover:bg-neutral-50/50'
-                }`}
-              >
-                <div className="relative flex items-center justify-center">
-                  <Icon className={`w-6 h-6 transition-transform duration-300 ${
-                    isActive(item.href) ? 'scale-110' : 'group-hover:scale-105'
-                  }`} />
-                  
-                  {/* Notification Indicator - Only dots for Matches and Messages when there are new notifications */}
-                  {!isLoading && hasNotification && isDotItem && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-sm animate-pulse"></span>
-                  )}
+          <button
+            onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+            className={`w-full flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors ${
+              !sidebarOpen ? 'justify-center' : ''
+            }`}
+            title={!sidebarOpen ? 'Logout' : undefined}
+          >
+            <ArrowRightOnRectangleIcon className={`h-5 w-5 ${sidebarOpen ? 'mr-3' : ''}`} />
+            {sidebarOpen && 'Logout'}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile menu button */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg shadow-lg"
+        >
+          <Bars3Icon className="w-6 h-6" />
+        </button>
                 </div>
                 
-                <span className={`text-xs font-medium mt-1 transition-colors duration-300 ${
-                  isActive(item.href) ? 'text-pink-600' : 'text-neutral-500 group-hover:text-pink-600'
-                }`}>
-                  {item.name}
-                </span>
-                
-                {/* Active indicator */}
-                {isActive(item.href) && (
-                  <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-pink-600 rounded-full"></div>
-                )}
-              </Link>
-            );
-          })}
+      {/* Desktop hamburger menu button */}
+      <div className="hidden lg:block fixed top-4 left-4 z-50">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg shadow-lg"
+        >
+          <Bars3Icon className="w-6 h-6" />
+        </button>
         </div>
         
-        {/* Bottom safe area for devices with home indicator */}
-        <div className="h-1 bg-gradient-to-r from-transparent via-neutral-200/30 to-transparent"></div>
-      </nav>
-
+      {/* Notification icon - top right for all screen sizes */}
+      <div className="fixed top-4 right-4 z-50">
+        <NotificationPopup />
+      </div>
     </>
   );
 }

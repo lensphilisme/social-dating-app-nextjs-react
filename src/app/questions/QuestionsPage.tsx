@@ -100,7 +100,7 @@ export default function QuestionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 pt-16 lg:pt-16 pb-16 lg:pb-0">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 pb-16 lg:pb-0">
       <div className="w-full px-3 sm:px-4 py-4 sm:py-6">
         <div className="max-w-4xl mx-auto">
           {/* Header - Mobile Optimized */}

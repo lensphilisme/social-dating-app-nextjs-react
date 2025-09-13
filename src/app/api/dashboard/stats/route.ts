@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       recentActivity
     ] = await Promise.all([
       // Count total likes received
-      prisma.favorite.count({
+      (prisma as any).favorite.count({
         where: {
           targetId: userId
         }
@@ -75,11 +75,19 @@ export async function GET(request: NextRequest) {
         }
       }),
       
-      // Profile views (mock for now - you can implement this later)
-      0,
+      // Profile views - get today's views
+      (prisma as any).profileView.count({
+        where: {
+          viewedId: userId,
+          createdAt: {
+            gte: today,
+            lt: tomorrow
+          }
+        }
+      }),
       
       // Today's likes received
-      prisma.favorite.count({
+      (prisma as any).favorite.count({
         where: {
           targetId: userId,
           createdAt: {
@@ -132,7 +140,7 @@ export async function GET(request: NextRequest) {
           take: 2
         }),
         // Recent likes
-        prisma.favorite.findMany({
+        (prisma as any).favorite.findMany({
           where: { targetId: userId },
           include: {
             user: true

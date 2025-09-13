@@ -1,11 +1,16 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getAuthUserId } from './authActions';
+import { auth } from '@/auth';
 
 export async function getMatches(): Promise<any[]> {
   try {
-    const userId = await getAuthUserId();
+    const session = await auth();
+    const userId = session?.user?.id;
+    
+    if (!userId) {
+      return [];
+    }
     
     const matches = await prisma.match.findMany({
       where: {
@@ -15,30 +20,33 @@ export async function getMatches(): Promise<any[]> {
         ]
       },
       include: {
-        user1: {
-          include: {
-            member: true
-          }
-        },
-        user2: {
-          include: {
-            member: true
-          }
-        }
+        user1: true,
+        user2: true
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    // Filter to get the other user in each match
-    return matches.map(match => {
-      const otherUser = match.user1Id === userId ? match.user2 : match.user1;
-      return {
-        id: match.id,
-        createdAt: match.createdAt,
-        member: otherUser.member,
-        user: otherUser
-      };
-    });
+    // Get member data for each user
+    const matchesWithMembers = await Promise.all(
+      matches.map(async (match) => {
+        const otherUserId = match.user1Id === userId ? match.user2Id : match.user1Id;
+        const otherUser = match.user1Id === userId ? match.user2 : match.user1;
+        
+        // Get member data
+        const member = await prisma.member.findUnique({
+          where: { userId: otherUserId }
+        });
+
+        return {
+          id: match.id,
+          createdAt: match.createdAt,
+          member: member,
+          user: otherUser
+        };
+      })
+    );
+
+    return matchesWithMembers;
   } catch (error) {
     console.error('Error fetching matches:', error);
     return [];
@@ -47,7 +55,12 @@ export async function getMatches(): Promise<any[]> {
 
 export async function getMatchCount(): Promise<number> {
   try {
-    const userId = await getAuthUserId();
+    const session = await auth();
+    const userId = session?.user?.id;
+    
+    if (!userId) {
+      return 0;
+    }
     
     const count = await prisma.match.count({
       where: {

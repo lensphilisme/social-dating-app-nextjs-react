@@ -9,6 +9,7 @@ interface QuestionQuizModalProps {
   questions: Question[];
   onSubmit: (answers: { questionId: string; answer: string }[]) => void;
   loading?: boolean;
+  redirectAfterSubmit?: string;
 }
 
 export default function QuestionQuizModal({
@@ -16,7 +17,8 @@ export default function QuestionQuizModal({
   onClose,
   questions,
   onSubmit,
-  loading = false
+  loading = false,
+  redirectAfterSubmit
 }: QuestionQuizModalProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<{ questionId: string; answer: string }[]>([]);
@@ -41,10 +43,19 @@ export default function QuestionQuizModal({
       } else if (!isYesNoQuestion && currentAnswer.trim()) {
         // Auto-submit open text if there's an answer
         handleSubmit();
-      } else if (isLastQuestion && answers.length > 0) {
-        // Auto-submit if it's the last question and we have some answers
+      } else if (isLastQuestion) {
+        // Auto-submit if it's the last question (even with no answers)
         setIsSubmitting(true);
         onSubmit(answers);
+        // Close modal after submission
+        setTimeout(() => {
+          onClose();
+        }, 500);
+        if (redirectAfterSubmit) {
+          setTimeout(() => {
+            window.location.href = redirectAfterSubmit;
+          }, 1000);
+        }
       }
     }
   }, [timeLeft, isTimerActive, isYesNoQuestion, currentAnswer, answers, isLastQuestion, isSubmitting]);
@@ -68,6 +79,15 @@ export default function QuestionQuizModal({
       
       if (isLastQuestion) {
         onSubmit(newAnswers);
+        // Close modal after submission
+        setTimeout(() => {
+          onClose();
+        }, 500);
+        if (redirectAfterSubmit) {
+          setTimeout(() => {
+            window.location.href = redirectAfterSubmit;
+          }, 1000);
+        }
       } else {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       }
@@ -81,6 +101,15 @@ export default function QuestionQuizModal({
       if (isLastQuestion) {
         setIsSubmitting(true);
         onSubmit(newAnswers);
+        // Close modal after submission
+        setTimeout(() => {
+          onClose();
+        }, 500);
+        if (redirectAfterSubmit) {
+          setTimeout(() => {
+            window.location.href = redirectAfterSubmit;
+          }, 1000);
+        }
       } else {
         setAnswers(newAnswers);
         setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -210,6 +239,9 @@ export default function QuestionQuizModal({
           <span className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
             {isYesNoQuestion ? '⚡ Quick Answer' : '✍️ Detailed Answer'}
           </span>
+          <p className="text-xs text-gray-500 mt-2">
+            You cannot go back to previous questions
+          </p>
         </div>
       </div>
     </div>

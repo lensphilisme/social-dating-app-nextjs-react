@@ -26,27 +26,37 @@ model Account {
 }
 
 model User {
-  id              String    @id @default(cuid())
-  name            String?
-  email           String?   @unique
-  emailVerified   DateTime?
-  passwordHash    String?
-  image           String?
-  profileComplete Boolean   @default(false)
-  role            Role      @default(MEMBER)
-  referralCode    String?   @unique
-  referralCount   Int       @default(0)
-  referredBy      String?
-  accounts        Account[]
-  member          Member?
-  User            User?     @relation("UserToUser", fields: [referredBy], references: [id])
-  other_User      User[]    @relation("UserToUser")
-  reportsMade     Report[]  @relation("ReportedBy")
-  reportsReceived Report[]  @relation("Reported")
-  bans            UserBan[]
-  media           UserMedia[]
-  favorites       Favorite[] @relation("UserFavorites")
-  favoritedBy     Favorite[] @relation("UserFavorited")
+  id                   String             @id @default(cuid())
+  name                 String?
+  email                String?            @unique
+  emailVerified        DateTime?
+  passwordHash         String?
+  image                String?
+  profileComplete      Boolean            @default(false)
+  role                 Role               @default(MEMBER)
+  referralCode         String?            @unique
+  referralCount        Int                @default(0)
+  referredBy           String?
+  accounts             Account[]
+  adminLogs            AdminLog[]
+  favoritedBy          Favorite[]         @relation("UserFavorited")
+  favorites            Favorite[]         @relation("UserFavorites")
+  member               Member?
+  assignedModeration   ModerationQueue[]
+  viewedBy             ProfileView[]      @relation("ProfileViewed")
+  profileViews         ProfileView[]      @relation("ProfileViewer")
+  assignedReports      Report[]           @relation("AssignedReports")
+  reportsReceived      Report[]           @relation("Reported")
+  reportsMade          Report[]           @relation("ReportedBy")
+  adminSupportChats    SupportChat[]      @relation("AdminSupportChats")
+  userSupportChats     SupportChat[]      @relation("UserSupportChats")
+  User                 User?              @relation("UserToUser", fields: [referredBy], references: [id])
+  other_User           User[]             @relation("UserToUser")
+  bans                 UserBan[]
+  media                UserMedia[]
+  announcementViews    AnnouncementView[] @relation("AnnouncementViews")
+  createdAnnouncements Announcement[]     @relation("AnnouncementCreator")
+  notifications        Notification[]
 }
 
 model Member {
@@ -137,8 +147,6 @@ model MatchRequest {
   recipient    Member             @relation("MatchRequestRecipient", fields: [recipientId], references: [userId], onDelete: Cascade)
   sender       Member             @relation("MatchRequestSender", fields: [senderId], references: [userId], onDelete: Cascade)
   responses    MatchResponse[]
-
-  @@unique([senderId, recipientId])
 }
 
 model MatchResponse {
@@ -159,9 +167,9 @@ model Question {
   question     String
   responseType QuestionType
   isActive     Boolean         @default(true)
-  timerSeconds Int             @default(10)
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @default(now())
+  timerSeconds Int             @default(10)
   responses    MatchResponse[]
   user         Member          @relation(fields: [userId], references: [userId], onDelete: Cascade)
 }
@@ -185,6 +193,295 @@ model Token {
   type    TokenType
 
   @@unique([email, token])
+}
+
+model Report {
+  id            String       @id @default(cuid())
+  reporterId    String
+  reportedId    String
+  type          ReportType
+  reason        String
+  description   String?
+  proof         String?
+  status        ReportStatus @default(PENDING)
+  adminNotes    String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  assignedTo    String?
+  priority      String       @default("NORMAL")
+  assignedAdmin User?        @relation("AssignedReports", fields: [assignedTo], references: [id])
+  reported      User         @relation("Reported", fields: [reportedId], references: [id], onDelete: Cascade)
+  reporter      User         @relation("ReportedBy", fields: [reporterId], references: [id], onDelete: Cascade)
+  supportChat   SupportChat?
+
+  @@index([reportedId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([priority])
+}
+
+model SupportChat {
+  id        String            @id @default(cuid())
+  reportId  String?           @unique
+  userId    String
+  adminId   String?
+  type      SupportChatType   @default(GENERAL_SUPPORT)
+  status    SupportChatStatus @default(OPEN)
+  subject   String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  admin     User?             @relation("AdminSupportChats", fields: [adminId], references: [id])
+  report    Report?           @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  user      User              @relation("UserSupportChats", fields: [userId], references: [id], onDelete: Cascade)
+  messages  SupportMessage[]
+
+  @@index([userId])
+  @@index([adminId])
+  @@index([status])
+  @@index([type])
+}
+
+model SupportMessage {
+  id         String             @id @default(cuid())
+  chatId     String
+  senderId   String
+  senderType String
+  type       SupportMessageType @default(TEXT)
+  content    String
+  fileUrl    String?
+  fileName   String?
+  fileSize   Int?
+  isRead     Boolean            @default(false)
+  createdAt  DateTime           @default(now())
+  chat       SupportChat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+model UserBan {
+  id        String    @id @default(cuid())
+  userId    String
+  reason    String
+  duration  Int?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+model UserMedia {
+  id          String    @id @default(cuid())
+  userId      String
+  type        MediaType
+  url         String
+  thumbnail   String?
+  title       String?
+  description String?
+  isPublic    Boolean   @default(true)
+  isMain      Boolean   @default(false)
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([isPublic])
+}
+
+model Favorite {
+  id              String   @id @default(cuid())
+  userId          String
+  createdAt       DateTime @default(now())
+  favoritedUserId String
+  favoritedBy     User     @relation("UserFavorited", fields: [favoritedUserId], references: [id], onDelete: Cascade)
+  user            User     @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, favoritedUserId])
+}
+
+model ProfileView {
+  id        String   @id @default(cuid())
+  viewerId  String
+  viewedId  String
+  createdAt DateTime @default(now())
+  viewed    User     @relation("ProfileViewed", fields: [viewedId], references: [id], onDelete: Cascade)
+  viewer    User     @relation("ProfileViewer", fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([viewerId, viewedId])
+}
+
+model AdminSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  category    String   @default("general")
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPublic])
+}
+
+model Theme {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  displayName String
+  description String?
+  isActive    Boolean  @default(false)
+  isDefault   Boolean  @default(false)
+  config      Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([isDefault])
+}
+
+model AdminLog {
+  id         String   @id @default(cuid())
+  adminId    String
+  action     String
+  targetType String?
+  targetId   String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([targetType])
+  @@index([createdAt])
+}
+
+model SystemNotification {
+  id          String           @id @default(cuid())
+  title       String
+  message     String
+  type        NotificationType @default(INFO)
+  isActive    Boolean          @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  targetUsers Json?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([isActive])
+  @@index([type])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model AdminDashboard {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  config      Json
+  isDefault   Boolean  @default(false)
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isDefault])
+  @@index([isPublic])
+}
+
+model ContentModerationRule {
+  id          String             @id @default(cuid())
+  name        String
+  description String?
+  type        ModerationType
+  pattern     String?
+  action      ModerationAction
+  severity    ModerationSeverity @default(MEDIUM)
+  isActive    Boolean            @default(true)
+  config      Json?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([type])
+  @@index([action])
+  @@index([severity])
+  @@index([isActive])
+}
+
+model ModerationQueue {
+  id            String             @id @default(cuid())
+  type          ModerationType
+  targetId      String
+  targetType    String
+  status        ModerationStatus   @default(PENDING)
+  priority      ModerationPriority @default(NORMAL)
+  assignedTo    String?
+  reason        String?
+  details       Json?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  resolvedAt    DateTime?
+  assignedAdmin User?              @relation(fields: [assignedTo], references: [id])
+
+  @@index([type])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedTo])
+  @@index([createdAt])
+}
+
+model SystemMetrics {
+  id        String   @id @default(cuid())
+  metric    String
+  value     Float
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@index([metric])
+  @@index([timestamp])
+}
+
+model Announcement {
+  id          String               @id @default(cuid())
+  title       String
+  message     String
+  type        AnnouncementType     @default(INFO)
+  priority    AnnouncementPriority @default(NORMAL)
+  isActive    Boolean              @default(true)
+  startDate   DateTime?
+  endDate     DateTime?
+  showDelay   Int                  @default(0)
+  duration    Int                  @default(10)
+  maxViews    Int?
+  targetUsers String?
+  styling     Json?
+  createdBy   String
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  views       AnnouncementView[]
+  creator     User                 @relation("AnnouncementCreator", fields: [createdBy], references: [id])
+
+  @@map("announcements")
+}
+
+model AnnouncementView {
+  id             String       @id @default(cuid())
+  announcementId String
+  userId         String
+  viewedAt       DateTime     @default(now())
+  dismissed      Boolean      @default(false)
+  sessionId      String?
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User         @relation("AnnouncementViews", fields: [userId], references: [id])
+
+  @@unique([announcementId, userId, sessionId])
+  @@map("announcement_views")
 }
 
 enum TokenType {
@@ -248,6 +545,9 @@ enum ReportStatus {
   UNDER_REVIEW
   RESOLVED
   DISMISSED
+  ASK_MORE_DETAILS
+  ACCEPTED
+  REJECTED
 }
 
 enum ReportType {
@@ -259,39 +559,27 @@ enum ReportType {
   OTHER
 }
 
-model Report {
-  id          String       @id @default(cuid())
-  reporterId  String
-  reportedId  String
-  type        ReportType
-  reason      String
-  description String?
-  proof       String?      // File path or URL
-  status      ReportStatus @default(PENDING)
-  adminNotes  String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @default(now())
-  
-  reporter    User         @relation("ReportedBy", fields: [reporterId], references: [id], onDelete: Cascade)
-  reported    User         @relation("Reported", fields: [reportedId], references: [id], onDelete: Cascade)
-  
-  @@index([reportedId])
-  @@index([status])
+enum SupportChatType {
+  REPORT_SUPPORT
+  GENERAL_SUPPORT
+  TECHNICAL_SUPPORT
+  ACCOUNT_SUPPORT
 }
 
-model UserBan {
-  id          String    @id @default(cuid())
-  userId      String
-  reason      String
-  duration    Int?      // Days, null for permanent
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  expiresAt   DateTime?
-  
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([userId])
-  @@index([isActive])
+enum SupportChatStatus {
+  OPEN
+  WAITING_USER
+  WAITING_ADMIN
+  CLOSED
+}
+
+enum SupportMessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+  SYSTEM
 }
 
 enum MediaType {
@@ -300,37 +588,85 @@ enum MediaType {
   AUDIO
 }
 
-model UserMedia {
-  id          String    @id @default(cuid())
-  userId      String
-  type        MediaType
-  url         String
-  thumbnail   String?   // For videos
-  title       String?
-  description String?
-  isPublic    Boolean   @default(true)
-  isMain      Boolean   @default(false)
-  order       Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now())
-  
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([userId])
-  @@index([type])
-  @@index([isPublic])
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
 }
 
-model Favorite {
-  id        String   @id @default(cuid())
-  userId    String
-  targetId  String
-  createdAt DateTime @default(now())
-  
-  user      User     @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
-  target    User     @relation("UserFavorited", fields: [targetId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, targetId])
+enum ModerationType {
+  PHOTO
+  MESSAGE
+  PROFILE
+  USER_BEHAVIOR
+  SPAM
+  INAPPROPRIATE_CONTENT
+}
+
+enum ModerationAction {
+  APPROVE
+  REJECT
+  FLAG
+  BAN_USER
+  DELETE_CONTENT
+  WARN_USER
+  ESCALATE
+}
+
+enum ModerationSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ModerationStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  ESCALATED
+  RESOLVED
+}
+
+enum ModerationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum AnnouncementType {
+  INFO
+  WARNING
+  SUCCESS
+  ERROR
+  PROMOTION
+  MAINTENANCE
+}
+
+enum AnnouncementPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model Notification {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String   // 'like', 'message', 'match_request', 'match_accepted', 'report', 'favorite'
+  title         String
+  message       String
+  relatedUserId String?  // ID of the user who triggered the notification
+  relatedId     String?  // ID of the related entity (match request, message, etc.)
+  isRead        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
-  @@index([targetId])
+  @@index([isRead])
+  @@index([createdAt])
 }

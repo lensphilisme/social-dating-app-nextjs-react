@@ -2,12 +2,13 @@
 
 import { prisma } from '@/lib/prisma';
 import { getAuthUserId } from './authActions';
+import { notifyMatchRequest, notifyMatchAccepted } from './notificationActions';
 
 export async function respondToMatchRequest(
   requestId: string, 
   action: 'accept' | 'ignore', 
   reason?: string
-): Promise<{ success: boolean; message: string }> {
+): Promise<{ success: boolean; message: string; needsQuestions?: boolean; questions?: any[] }> {
   const userId = await getAuthUserId();
 
   try {
@@ -32,22 +33,22 @@ export async function respondToMatchRequest(
     }
 
     if (action === 'accept') {
-      // Check if the recipient has questions for the sender
-      const recipientQuestions = await prisma.question.findMany({
+      // Check if the sender has questions for the recipient to answer
+      const senderQuestions = await prisma.question.findMany({
         where: {
-          userId: matchRequest.recipientId,
+          userId: matchRequest.senderId,
           isActive: true,
         }
       });
 
-      if (recipientQuestions.length > 0) {
-        // Recipient has questions, need to get responses first
+      if (senderQuestions.length > 0) {
+        // Sender has questions, recipient needs to answer them
         // Return the questions so the UI can prompt the recipient
         return { 
           success: true, 
           message: 'Please answer the questions to complete the match',
           needsQuestions: true,
-          questions: recipientQuestions
+          questions: senderQuestions
         };
       } else {
         // No questions, create mutual match directly
@@ -176,7 +177,14 @@ export async function completeMatchWithQuestions(
       return { success: false, message: 'Match request not found' };
     }
 
-    // Create mutual match with responses
+    // Check if the original sender (User 1) has questions for User 2 to answer
+    const senderQuestions = await prisma.question.findMany({
+      where: {
+        userId: matchRequest.senderId,
+        isActive: true,
+      }
+    });
+
     await prisma.$transaction(async (tx) => {
       // Update match request status
       await tx.matchRequest.update({
@@ -187,32 +195,61 @@ export async function completeMatchWithQuestions(
         }
       });
 
-      // Create match record (check if already exists)
-      const existingMatch = await tx.match.findFirst({
-        where: {
-          OR: [
-            { user1Id: matchRequest.senderId, user2Id: matchRequest.recipientId },
-            { user1Id: matchRequest.recipientId, user2Id: matchRequest.senderId }
-          ]
+      if (senderQuestions.length === 0) {
+        // No questions from sender, create match directly
+        const existingMatch = await tx.match.findFirst({
+          where: {
+            OR: [
+              { user1Id: matchRequest.senderId, user2Id: matchRequest.recipientId },
+              { user1Id: matchRequest.recipientId, user2Id: matchRequest.senderId }
+            ]
+          }
+        });
+
+        if (!existingMatch) {
+          await tx.match.create({
+            data: {
+              user1Id: matchRequest.senderId,
+              user2Id: matchRequest.recipientId,
+            }
+          });
         }
-      });
-
-      if (!existingMatch) {
-        await tx.match.create({
+        
+        // Send notification to the original sender
+        const recipientMember = await prisma.member.findUnique({
+          where: { userId: matchRequest.recipientId }
+        });
+        
+        if (recipientMember) {
+          await notifyMatchAccepted(
+            matchRequest.recipientId,
+            matchRequest.senderId,
+            recipientMember.name
+          );
+        }
+      } else {
+        // Sender has questions, create a new match request from User 2 to User 1
+        const newRequest = await tx.matchRequest.create({
           data: {
-            user1Id: matchRequest.senderId,
-            user2Id: matchRequest.recipientId,
+            senderId: matchRequest.recipientId, // User 2 sends to User 1
+            recipientId: matchRequest.senderId, // User 1 receives from User 2
+            status: 'PENDING', // User 1 needs to answer User 2's questions
           }
         });
-
-        // Create a reverse match request to count as "sent" for the recipient
-        await tx.matchRequest.create({
-          data: {
-            senderId: matchRequest.recipientId,
-            recipientId: matchRequest.senderId,
-            status: 'ACCEPTED', // Auto-accept since it's mutual
-          }
+        
+        // Send notification to User 1 about the new request
+        const senderMember = await prisma.member.findUnique({
+          where: { userId: matchRequest.recipientId }
         });
+        
+        if (senderMember) {
+          await notifyMatchRequest(
+            matchRequest.recipientId,
+            matchRequest.senderId,
+            senderMember.name,
+            newRequest.id
+          );
+        }
       }
 
       // Add responses to the match request (check for existing first)
@@ -241,7 +278,11 @@ export async function completeMatchWithQuestions(
       }
     });
 
-    return { success: true, message: 'Match completed! You can now chat.' };
+    if (senderQuestions.length === 0) {
+      return { success: true, message: 'Match completed! You can now chat.' };
+    } else {
+      return { success: true, message: 'Your answers have been sent! Now waiting for them to answer your questions.' };
+    }
   } catch (error) {
     console.error('Error completing match with questions:', error);
     

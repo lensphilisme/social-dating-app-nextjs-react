@@ -14,6 +14,12 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { useSession } from 'next-auth/react';
+import { createMessage } from '@/app/actions/messageActions';
+import { pusherClient } from '@/lib/pusher';
+import { Channel } from 'pusher-js';
+import usePresenceStore from '@/hooks/usePresenceStore';
+import { transformImageUrl } from '@/lib/util';
+import Link from 'next/link';
 
 interface Conversation {
   id: string;
@@ -48,7 +54,13 @@ export default function MessagesContent() {
   const [newMessage, setNewMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const { data: session } = useSession();
+  const channelRef = useRef<Channel | null>(null);
+  
+  const { members } = usePresenceStore((state) => ({
+    members: state.members,
+  }));
 
   // Fetch conversations from database
   useEffect(() => {
@@ -94,27 +106,64 @@ export default function MessagesContent() {
     conv.user.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSendMessage = async () => {
-    if (newMessage.trim() && selectedConversation && session?.user?.id) {
-      try {
-        const response = await fetch('/api/messages/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            recipientId: selectedConversation,
-            text: newMessage
-          })
+  // Set up Pusher channel for real-time messaging
+  useEffect(() => {
+    if (selectedConversation && session?.user?.id) {
+      const chatId = `chat_${[session.user.id, selectedConversation].sort().join('_')}`;
+      
+      if (!channelRef.current) {
+        channelRef.current = pusherClient.subscribe(chatId);
+
+        channelRef.current.bind('message:new', (message: any) => {
+          setMessages(prev => [...prev, {
+            id: message.id,
+            text: message.text,
+            timestamp: new Date(message.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isFromMe: message.senderId === session.user.id,
+            isRead: !!message.dateRead,
+            type: 'text'
+          }]);
         });
 
-        if (response.ok) {
-          const message = await response.json();
-          setMessages(prev => [...prev, message]);
-          setNewMessage('');
+        channelRef.current.bind('messages:read', (messageIds: string[]) => {
+          setMessages(prev =>
+            prev.map(message =>
+              messageIds.includes(message.id)
+                ? { ...message, isRead: true }
+                : message
+            )
+          );
+        });
+      }
+    }
+
+    return () => {
+      if (channelRef.current && channelRef.current.subscribed) {
+        channelRef.current.unsubscribe();
+        channelRef.current.unbind('message:new');
+        channelRef.current.unbind('messages:read');
+        channelRef.current = null;
+      }
+    };
+  }, [selectedConversation, session?.user?.id]);
+
+  const handleSendMessage = async () => {
+    if (newMessage.trim() && selectedConversation && session?.user?.id && !isSending) {
+      setIsSending(true);
+      const messageText = newMessage.trim();
+      setNewMessage('');
+
+      try {
+        const result = await createMessage(selectedConversation, { text: messageText });
+        if (result.status === 'error') {
+          console.error('Failed to send message:', result.error);
+          setNewMessage(messageText);
         }
       } catch (error) {
-        console.error('Failed to send message:', error);
+        console.error('Error sending message:', error);
+        setNewMessage(messageText);
+      } finally {
+        setIsSending(false);
       }
     }
   };
@@ -174,7 +223,7 @@ export default function MessagesContent() {
                       alt={conversation.user.name}
                       className="w-12 h-12 rounded-full object-cover"
                     />
-                    {conversation.user.isOnline && (
+                    {members.indexOf(conversation.user.id) !== -1 && (
                       <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
                     )}
                   </div>
@@ -232,7 +281,7 @@ export default function MessagesContent() {
                         alt="User"
                         className="w-10 h-10 rounded-full object-cover"
                       />
-                      {conversations.find(c => c.id === selectedConversation)?.user.isOnline && (
+                      {selectedConversation && members.indexOf(selectedConversation) !== -1 && (
                         <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                       )}
                     </div>
@@ -241,7 +290,7 @@ export default function MessagesContent() {
                         {conversations.find(c => c.id === selectedConversation)?.user.name}
                       </h2>
                       <p className="text-sm text-neutral-500">
-                        {conversations.find(c => c.id === selectedConversation)?.user.isOnline ? 'Online' : 'Offline'}
+                        {selectedConversation && members.indexOf(selectedConversation) !== -1 ? 'Online' : 'Offline'}
                       </p>
                     </div>
                   </div>
@@ -309,10 +358,14 @@ export default function MessagesContent() {
                   </div>
                   <button
                     onClick={handleSendMessage}
-                    disabled={!newMessage.trim()}
+                    disabled={!newMessage.trim() || isSending}
                     className="p-2 bg-primary-500 text-white rounded-full hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    <PaperAirplaneIcon className="w-5 h-5" />
+                    {isSending ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <PaperAirplaneIcon className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
               </div>

@@ -4,20 +4,20 @@ import { prisma } from '@/lib/prisma';
 import { getAuthUserId } from './authActions';
 import { sendLikeNotification } from '@/lib/pusher';
 
-export async function addToFavorites(targetId: string): Promise<{ success: boolean; message: string }> {
+export async function addToFavorites(favoritedUserId: string): Promise<{ success: boolean; message: string }> {
   try {
     const userId = await getAuthUserId();
     
-    if (userId === targetId) {
+    if (userId === favoritedUserId) {
       return { success: false, message: 'You cannot add yourself to favorites' };
     }
 
     // Check if already in favorites
-    const existingFavorite = await prisma.favorite.findUnique({
+    const existingFavorite = await (prisma as any).favorite.findUnique({
       where: {
-        userId_targetId: {
+        userId_favoritedUserId: {
           userId,
-          targetId
+          favoritedUserId
         }
       }
     });
@@ -26,10 +26,10 @@ export async function addToFavorites(targetId: string): Promise<{ success: boole
       return { success: false, message: 'User is already in your favorites' };
     }
 
-    await prisma.favorite.create({
+    await (prisma as any).favorite.create({
       data: {
         userId,
-        targetId
+        favoritedUserId
       }
     });
 
@@ -41,7 +41,7 @@ export async function addToFavorites(targetId: string): Promise<{ success: boole
       });
       
       if (liker?.member?.name) {
-        await sendLikeNotification(targetId, liker.member.name);
+        await sendLikeNotification(favoritedUserId, liker.member.name);
       }
     } catch (notificationError) {
       console.error('Error sending like notification:', notificationError);
@@ -54,14 +54,14 @@ export async function addToFavorites(targetId: string): Promise<{ success: boole
   }
 }
 
-export async function removeFromFavorites(targetId: string): Promise<{ success: boolean; message: string }> {
+export async function removeFromFavorites(favoritedUserId: string): Promise<{ success: boolean; message: string }> {
   try {
     const userId = await getAuthUserId();
     
-    await prisma.favorite.deleteMany({
+    await (prisma as any).favorite.deleteMany({
       where: {
         userId,
-        targetId
+        favoritedUserId
       }
     });
 
@@ -76,10 +76,10 @@ export async function getFavorites(): Promise<any[]> {
   try {
     const userId = await getAuthUserId();
     
-    const favorites = await prisma.favorite.findMany({
+    const favorites = await (prisma as any).favorite.findMany({
       where: { userId },
       include: {
-        target: {
+        favoritedBy: {
           include: {
             member: true
           }
@@ -88,10 +88,10 @@ export async function getFavorites(): Promise<any[]> {
       orderBy: { createdAt: 'desc' }
     });
 
-    return favorites.map(fav => ({
+    return favorites.map((fav: any) => ({
       id: fav.id,
       createdAt: fav.createdAt,
-      member: fav.target.member
+      member: fav.favoritedBy.member
     }));
   } catch (error) {
     console.error('Error fetching favorites:', error);
@@ -99,15 +99,15 @@ export async function getFavorites(): Promise<any[]> {
   }
 }
 
-export async function isFavorite(targetId: string): Promise<boolean> {
+export async function isFavorite(favoritedUserId: string): Promise<boolean> {
   try {
     const userId = await getAuthUserId();
     
-    const favorite = await prisma.favorite.findUnique({
+    const favorite = await (prisma as any).favorite.findUnique({
       where: {
-        userId_targetId: {
+        userId_favoritedUserId: {
           userId,
-          targetId
+          favoritedUserId
         }
       }
     });

@@ -46,9 +46,9 @@ export async function GET(request: NextRequest) {
 
     try {
       // Count favorites (people who liked the user)
-      favoritesCount = await prisma.favorite.count({
+      favoritesCount = await (prisma as any).favorite.count({
         where: {
-          targetId: userId
+          favoritedUserId: userId
         }
       });
     } catch (error) {

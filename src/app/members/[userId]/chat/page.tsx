@@ -1,15 +1,22 @@
-import { getAuthUserId } from '@/app/actions/authActions';
+import { auth } from '@/auth';
 import { getMessageThread } from '@/app/actions/messageActions';
-import CardInnerWrapper from '@/components/CardInnerWrapper';
 import { createChatId } from '@/lib/util';
 import { canAccessChat } from '@/lib/chatProtection';
-import ChatForm from './ChatForm';
-import MessageList from './MessageList';
+import { prisma } from '@/lib/prisma';
+import { transformImageUrl } from '@/lib/util';
+import ChatInterface from './ChatInterface';
 import { redirect } from 'next/navigation';
 
 export default async function ChatPage({params}: {params: Promise<{userId: string}>}) {
     const { userId: targetUserId } = await params;
-    const userId = await getAuthUserId();
+    
+    // Get session directly
+    const session = await auth();
+    const userId = session?.user?.id;
+    
+    if (!userId) {
+        redirect('/auth/signin');
+    }
     
     // Check if users are matched
     const canChat = await canAccessChat(targetUserId);
@@ -17,16 +24,36 @@ export default async function ChatPage({params}: {params: Promise<{userId: strin
         redirect(`/members/${targetUserId}`);
     }
     
-    const messages = await getMessageThread(targetUserId);
+    // Get messages and user info
+    const messageThread = await getMessageThread(targetUserId);
+    const messages = messageThread?.messages || [];
     const chatId = createChatId(userId, targetUserId);
+    
+    // Get target user info for header
+    const targetUser = await prisma.member.findUnique({
+        where: { userId: targetUserId },
+        include: {
+            user: {
+                select: {
+                    name: true,
+                    image: true
+                }
+            }
+        }
+    });
+
+    if (!targetUser) {
+        redirect('/matches');
+    }
 
     return (
-        <CardInnerWrapper
-            header='Chat'
-            body={
-                <MessageList initialMessages={messages} currentUserId={userId} chatId={chatId} />
-            }
-            footer={<ChatForm />}
-        />
+        <div className="h-screen bg-gray-50 flex flex-col">
+            <ChatInterface 
+                messages={messages} 
+                currentUserId={userId} 
+                chatId={chatId}
+                targetUser={targetUser}
+            />
+        </div>
     )
 }

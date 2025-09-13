@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcryptjs';
 import { membersData } from './membersData';
+import seedAdminSystem from './adminSeed';
 
 const prisma = new PrismaClient();
 
@@ -54,6 +55,7 @@ async function main() {
   if (process.env.RUN_SEED === 'true' || process.env.NODE_ENV === 'development') {
     await seedMembers();
     await seedAdmin();
+    await seedAdminSystem();
   }
 }
 

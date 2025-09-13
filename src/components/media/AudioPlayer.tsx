@@ -29,9 +29,14 @@ export default function AudioPlayer({ src, title, className = '' }: AudioPlayerP
     const audio = audioRef.current;
     if (!audio) return;
 
+    // Set initial volume
+    audio.volume = volume;
+
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
       setIsLoading(false);
+      // Ensure volume is set after loading
+      audio.volume = volume;
     };
 
     const handleTimeUpdate = () => {
@@ -59,7 +64,7 @@ export default function AudioPlayer({ src, title, className = '' }: AudioPlayerP
       audio.removeEventListener('play', handlePlay);
       audio.removeEventListener('pause', handlePause);
     };
-  }, [src]);
+  }, [src, volume]);
 
   const togglePlay = () => {
     const audio = audioRef.current;

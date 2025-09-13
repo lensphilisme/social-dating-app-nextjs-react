@@ -98,11 +98,15 @@ export default function DiscoverPage() {
       const result = await sendMatchRequest(selectedMember.userId, answers);
       if (result.success) {
         console.log('Match request sent successfully');
+        // Show success message or redirect
+        alert('Match request sent successfully!');
       } else {
         console.error('Failed to send match request:', result.message);
+        alert(result.message || 'Failed to send match request');
       }
     } catch (error) {
       console.error('Error sending match request:', error);
+      alert('Error sending match request');
     }
 
     // Close modal and move to next card
@@ -148,7 +152,7 @@ export default function DiscoverPage() {
   }
 
   return (
-    <div className="h-screen bg-black overflow-hidden relative pt-16 lg:pt-16 pb-16 lg:pb-0">
+    <div className="h-screen bg-black overflow-hidden relative pb-16 lg:pb-0">
       {/* Undo Button - Top Left */}
       {swipedMembers.length > 0 && currentIndex > 0 && (
         <button
@@ -217,6 +221,7 @@ export default function DiscoverPage() {
             setMemberQuestions([]);
           }}
           onSubmit={handleQuestionSubmit}
+          redirectAfterSubmit="/discover"
         />
       )}
     </div>

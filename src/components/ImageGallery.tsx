@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { MediaType } from '@prisma/client';
+import EnhancedVideoPlayer from './media/EnhancedVideoPlayer';
 
 interface MediaItem {
   id: string;
@@ -151,10 +152,12 @@ export default function ImageGallery({ media, userId, isOwner = false }: ImageGa
                 className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
               />
             ) : selectedMedia.type === 'VIDEO' ? (
-              <video
+              <EnhancedVideoPlayer
                 src={selectedMedia.url}
-                controls
+                title={selectedMedia.title}
                 className="w-full h-auto max-h-[80vh] rounded-lg"
+                showFullscreenButton={true}
+                showCloseButton={false}
               />
             ) : (
               <div className="bg-white rounded-lg p-8 text-center">

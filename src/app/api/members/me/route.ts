@@ -79,6 +79,7 @@ export async function PUT(request: NextRequest) {
         favoriteScripture: data.favoriteScripture,
         spiritualAchievements: data.spiritualAchievements,
         spiritualGoals: data.spiritualGoals,
+        image: data.image,
         updated: new Date()
       },
       include: {

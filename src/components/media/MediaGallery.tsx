@@ -9,11 +9,13 @@ import {
   PlusIcon,
   TrashIcon,
   StarIcon,
-  StarIcon as StarIconSolid
+  StarIcon as StarIconSolid,
+  PlayIcon
 } from '@heroicons/react/24/outline';
-import AudioRecorder from './AudioRecorder';
+import EnhancedAudioRecorder from './EnhancedAudioRecorder';
 import AudioPlayer from './AudioPlayer';
-import VideoPlayer from './VideoPlayer';
+import EnhancedVideoPlayer from './EnhancedVideoPlayer';
+import VideoModal from './VideoModal';
 import ProgressBar from '../ui/ProgressBar';
 
 interface MediaItem {
@@ -39,6 +41,7 @@ export default function MediaGallery({ userId, onMediaUpdate }: MediaGalleryProp
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadingFile, setUploadingFile] = useState<string | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<MediaItem | null>(null);
 
   const isOwnProfile = !userId;
 
@@ -252,7 +255,7 @@ export default function MediaGallery({ userId, onMediaUpdate }: MediaGalleryProp
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <AudioRecorder
+              <EnhancedAudioRecorder
                 onSave={handleAudioSave}
                 onCancel={() => setShowAudioRecorder(false)}
               />
@@ -284,14 +287,6 @@ export default function MediaGallery({ userId, onMediaUpdate }: MediaGalleryProp
               animate={{ opacity: 1, scale: 1 }}
               className="relative group bg-neutral-100 rounded-xl overflow-hidden aspect-square"
             >
-              {/* Main Badge */}
-              {item.isMain && (
-                <div className="absolute top-2 left-2 z-10">
-                  <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                    <StarIconSolid className="w-3 h-3 text-white" />
-                  </div>
-                </div>
-              )}
 
               {/* Media Content */}
               {item.type === 'IMAGE' ? (
@@ -301,11 +296,23 @@ export default function MediaGallery({ userId, onMediaUpdate }: MediaGalleryProp
                   className="w-full h-full object-cover"
                 />
               ) : item.type === 'VIDEO' ? (
-                <VideoPlayer
-                  src={item.url}
-                  title={item.title}
-                  className="w-full h-full"
-                />
+                <div 
+                  className="w-full h-full cursor-pointer relative"
+                  onClick={() => setSelectedVideo(item)}
+                >
+                  <video
+                    src={item.url}
+                    className="w-full h-full object-cover"
+                    preload="metadata"
+                    muted
+                  />
+                  {/* Play Button Overlay */}
+                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                    <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center">
+                      <PlayIcon className="w-6 h-6 text-neutral-900 ml-1" />
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-100 to-pink-100 p-2">
                   <AudioPlayer
@@ -316,24 +323,35 @@ export default function MediaGallery({ userId, onMediaUpdate }: MediaGalleryProp
                 </div>
               )}
 
-              {/* Overlay Actions */}
+              {/* Main Badge - Always Visible */}
+              {item.isMain && (
+                <div className="absolute top-2 left-2 z-10">
+                  <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                    <StarIconSolid className="w-3 h-3 text-white" />
+                  </div>
+                </div>
+              )}
+
+              {/* Delete Button - Always Visible for Own Profile */}
               {isOwnProfile && (
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
-                  <button
-                    onClick={() => handleSetMain(item.id)}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                      item.isMain 
-                        ? 'bg-yellow-500 text-white' 
-                        : 'bg-white/20 text-white hover:bg-white/30'
-                    }`}
-                  >
-                    <StarIcon className="w-4 h-4" />
-                  </button>
+                <div className="absolute top-2 right-2 z-10">
                   <button
                     onClick={() => handleDeleteMedia(item.id)}
-                    className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 transition-colors"
+                    className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 transition-colors shadow-lg"
                   >
-                    <TrashIcon className="w-4 h-4" />
+                    <TrashIcon className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
+
+              {/* Set Main Button - Always Visible for Own Profile */}
+              {isOwnProfile && !item.isMain && (
+                <div className="absolute bottom-2 left-2 z-10">
+                  <button
+                    onClick={() => handleSetMain(item.id)}
+                    className="w-6 h-6 bg-white/80 rounded-full flex items-center justify-center text-neutral-700 hover:bg-white transition-colors shadow-lg"
+                  >
+                    <StarIcon className="w-3 h-3" />
                   </button>
                 </div>
               )}
@@ -352,6 +370,14 @@ export default function MediaGallery({ userId, onMediaUpdate }: MediaGalleryProp
           />
         </div>
       )}
+
+      {/* Video Modal */}
+      <VideoModal
+        isOpen={!!selectedVideo}
+        onClose={() => setSelectedVideo(null)}
+        src={selectedVideo?.url || ''}
+        title={selectedVideo?.title}
+      />
     </div>
   );
 }

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CldUploadButton, CloudinaryUploadWidgetResults } from 'next-cloudinary';
+import { trackProfileView } from '@/app/actions/profileViewActions';
 import { 
   HeartIcon, 
   FireIcon, 
@@ -86,41 +88,43 @@ export default function ProfileDetailContent({ member }: ProfileDetailContentPro
   const isOwnProfile = session?.user?.id === member.userId;
 
   useEffect(() => {
-    if (isOwnProfile) {
-      fetchReferralNetwork();
-    } else {
-      fetchOtherUserData();
+    fetchAllData();
+    
+    // Track profile view for other users
+    if (!isOwnProfile && member?.userId) {
+      trackProfileView(member.userId);
     }
   }, [isOwnProfile, member.userId]);
 
-  const fetchReferralNetwork = async () => {
+  const fetchAllData = async () => {
     try {
-      const response = await fetch('/api/referral/network');
-      if (response.ok) {
-        const data = await response.json();
-        setReferralNetwork(data.data);
-        // Update memberData with fresh referral data
-        setMemberData(prev => ({
-          ...prev,
-          referralCode: data.data.referralCode,
-          referralCount: data.data.referralCount
-        }));
-      }
-    } catch (error) {
-      console.error('Error fetching referral network:', error);
-    }
-  };
+      if (isOwnProfile) {
+        // For own profile, fetch member data and referral network
+        const [memberResponse, referralResponse] = await Promise.all([
+          fetch('/api/members/me'),
+          fetch('/api/referral/network')
+        ]);
 
-  const fetchOtherUserData = async () => {
-    try {
-      const response = await fetch(`/api/members/${member.userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setMemberData(data);
-        setReferralNetwork(data.referralNetwork);
+        if (memberResponse.ok) {
+          const memberData = await memberResponse.json();
+          setMemberData(memberData);
+        }
+
+        if (referralResponse.ok) {
+          const referralData = await referralResponse.json();
+          setReferralNetwork(referralData.data);
+        }
+      } else {
+        // For other users, fetch all data in one request
+        const response = await fetch(`/api/members/${member.userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setMemberData(data);
+          setReferralNetwork(data.referralNetwork);
+        }
       }
     } catch (error) {
-      console.error('Error fetching other user data:', error);
+      console.error('Error fetching data:', error);
     }
   };
 
@@ -167,8 +171,8 @@ export default function ProfileDetailContent({ member }: ProfileDetailContentPro
         }));
         // Also update the main member object
         (member as any).referralCode = data.referralCode;
-        // Refresh referral network data
-        await fetchReferralNetwork();
+        // Refresh all data
+        await fetchAllData();
         alert('New referral code generated successfully!');
       } else {
         throw new Error('Failed to regenerate referral code');
@@ -186,6 +190,43 @@ export default function ProfileDetailContent({ member }: ProfileDetailContentPro
     } catch (error) {
       console.error('Error copying referral code:', error);
       alert('Failed to copy referral code');
+    }
+  };
+
+  const handleProfilePhotoUpload = async (result: CloudinaryUploadWidgetResults) => {
+    try {
+      if (!result.info || typeof result.info === 'string') return;
+      
+      const imageUrl = result.info.secure_url;
+      
+      // Update the member's profile image
+      const response = await fetch('/api/members/me', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: imageUrl
+        }),
+      });
+
+      if (response.ok) {
+        const updatedMember = await response.json();
+        setMemberData(prev => ({
+          ...prev,
+          image: imageUrl
+        }));
+        // Also update the main member object
+        (member as any).image = imageUrl;
+        alert('Profile photo updated successfully!');
+        // Refresh the page to ensure all components show the updated image
+        router.refresh();
+      } else {
+        alert('Failed to update profile photo');
+      }
+    } catch (error) {
+      console.error('Error updating profile photo:', error);
+      alert('Error updating profile photo');
     }
   };
 
@@ -695,9 +736,14 @@ export default function ProfileDetailContent({ member }: ProfileDetailContentPro
               className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
             />
             {isOwnProfile && (
-              <button className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-white hover:bg-primary-600 transition-colors">
+              <CldUploadButton
+              options={{ maxFiles: 1 }}
+              onSuccess={handleProfilePhotoUpload}
+              signatureEndpoint='/api/sign-image'
+              className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center text-white hover:bg-primary-600 transition-colors"
+            >
                 <PhotoIcon className="w-3 h-3" />
-              </button>
+              </CldUploadButton>
             )}
           </div>
           <div className="flex-1">

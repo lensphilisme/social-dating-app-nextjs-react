@@ -38,9 +38,14 @@ export default function VideoPlayer({ src, title, className = '', poster }: Vide
     const video = videoRef.current;
     if (!video) return;
 
+    // Set initial volume
+    video.volume = volume;
+
     const handleLoadedMetadata = () => {
       setDuration(video.duration);
       setIsLoading(false);
+      // Ensure volume is set after loading
+      video.volume = volume;
     };
 
     const handleTimeUpdate = () => {
@@ -74,7 +79,7 @@ export default function VideoPlayer({ src, title, className = '', poster }: Vide
       video.removeEventListener('pause', handlePause);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [src]);
+  }, [src, volume]);
 
   const togglePlay = () => {
     const video = videoRef.current;

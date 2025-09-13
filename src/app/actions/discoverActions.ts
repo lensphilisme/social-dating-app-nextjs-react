@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { Member } from '@prisma/client';
 import { getAuthUserId } from './authActions';
+import { notifyMatchRequest } from './notificationActions';
 import { addYears } from 'date-fns';
 
 export async function getDiscoverMembers(): Promise<Member[]> {
@@ -71,21 +72,35 @@ export async function sendMatchRequest(
   const senderId = await getAuthUserId();
 
   try {
-    // Check if request already exists
-    const existingRequest = await prisma.matchRequest.findUnique({
+    // Check if users are already matched
+    const existingMatch = await prisma.match.findFirst({
       where: {
-        senderId_recipientId: {
-          senderId,
-          recipientId,
-        }
+        OR: [
+          { user1Id: senderId, user2Id: recipientId },
+          { user1Id: recipientId, user2Id: senderId }
+        ]
       }
     });
 
-    if (existingRequest) {
-      return { success: false, message: 'Match request already sent' };
+    if (existingMatch) {
+      return { success: false, message: 'You are already matched with this user' };
+    }
+
+    // Check if there's already a pending request (to avoid spam)
+    const pendingRequest = await prisma.matchRequest.findFirst({
+      where: {
+        senderId,
+        recipientId,
+        status: 'PENDING'
+      }
+    });
+
+    if (pendingRequest) {
+      return { success: false, message: 'You already have a pending request with this user' };
     }
 
     // Create match request with responses
+    let matchRequestId: string = '';
     await prisma.$transaction(async (tx) => {
       const matchRequest = await tx.matchRequest.create({
         data: {
@@ -94,6 +109,8 @@ export async function sendMatchRequest(
           status: 'PENDING',
         }
       });
+      
+      matchRequestId = matchRequest.id;
 
       // Create responses
       await tx.matchResponse.createMany({
@@ -104,6 +121,20 @@ export async function sendMatchRequest(
         }))
       });
     });
+
+    // Send notification to recipient
+    const senderMember = await prisma.member.findUnique({
+      where: { userId: senderId }
+    });
+    
+    if (senderMember) {
+      await notifyMatchRequest(
+        senderId,
+        recipientId,
+        senderMember.name,
+        matchRequestId
+      );
+    }
 
     return { success: true, message: 'Match request sent successfully' };
   } catch (error) {

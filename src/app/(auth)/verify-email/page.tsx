@@ -9,7 +9,8 @@ export default async function VerifyEmailPage({
 }: {
   searchParams: { token: string };
 }) {
-  const result = await verifyEmail(searchParams.token);
+  const params = await searchParams;
+  const result = await verifyEmail(params.token);
 
   return (
     <CardWrapper

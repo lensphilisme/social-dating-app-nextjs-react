@@ -54,8 +54,7 @@ export async function GET(request: NextRequest) {
           user: {
             id: partnerId,
             name: partner?.name || 'Unknown User',
-            image: partner?.image || '/images/user.png',
-            isOnline: Math.random() > 0.5 // Mock online status
+            image: partner?.image || '/images/user.png'
           },
           lastMessage: {
             text: message.text,

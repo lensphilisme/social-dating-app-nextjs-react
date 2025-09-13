@@ -4,7 +4,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function MembersPage() {
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-gray-50">
       <Suspense fallback={<LoadingSpinner />}>
         <MembersContent />
       </Suspense>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Member, Question } from '@prisma/client';
 import { transformImageUrl } from '@/lib/util';
 
@@ -10,15 +10,81 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (answers: { questionId: string; answer: string }[]) => void;
+  redirectAfterSubmit?: string;
 };
 
-export default function QuestionPromptModal({ member, questions, isOpen, onClose, onSubmit }: Props) {
+export default function QuestionPromptModal({ member, questions, isOpen, onClose, onSubmit, redirectAfterSubmit }: Props) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<{ questionId: string; answer: string }[]>([]);
   const [currentAnswer, setCurrentAnswer] = useState('');
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [isTimerActive, setIsTimerActive] = useState(false);
 
   const currentQuestion = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
+  const isYesNoQuestion = currentQuestion?.responseType === 'YES_NO';
+
+  // Timer effect
+  useEffect(() => {
+    if (isTimerActive && timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (timeLeft === 0 && isTimerActive) {
+      // Auto-submit when timer expires
+      if (isYesNoQuestion && currentAnswer === '') {
+        handleAnswer('No'); // Default to No if no answer given
+      } else if (!isYesNoQuestion && currentAnswer.trim()) {
+        // Auto-submit open text if there's an answer
+        handleNext();
+      } else if (isLastQuestion) {
+        // Auto-submit if it's the last question (even with no answers)
+        onSubmit(answers);
+        // Close modal after submission
+        setTimeout(() => {
+          onClose();
+        }, 500);
+        if (redirectAfterSubmit) {
+          setTimeout(() => {
+            window.location.href = redirectAfterSubmit;
+          }, 1000);
+        }
+      }
+    }
+  }, [timeLeft, isTimerActive, isYesNoQuestion, currentAnswer, answers, isLastQuestion]);
+
+  // Start timer when question changes
+  useEffect(() => {
+    if (currentQuestion && isOpen) {
+      setTimeLeft(currentQuestion.timerSeconds);
+      setIsTimerActive(true);
+      setCurrentAnswer('');
+    }
+  }, [currentQuestion, isOpen]);
+
+  const handleAnswer = (answer: string) => {
+    setCurrentAnswer(answer);
+    
+    // For YES_NO questions, auto-advance after selection
+    if (isYesNoQuestion) {
+      const newAnswers = [...answers, { questionId: currentQuestion.id, answer }];
+      setAnswers(newAnswers);
+      
+      if (isLastQuestion) {
+        onSubmit(newAnswers);
+        // Close modal after submission
+        setTimeout(() => {
+          onClose();
+        }, 500);
+        if (redirectAfterSubmit) {
+          setTimeout(() => {
+            window.location.href = redirectAfterSubmit;
+          }, 1000);
+        }
+      } else {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+      }
+    }
+  };
 
   const handleNext = () => {
     if (!currentAnswer.trim()) {
@@ -36,6 +102,15 @@ export default function QuestionPromptModal({ member, questions, isOpen, onClose
 
     if (isLastQuestion) {
       onSubmit(newAnswers);
+      // Close modal after submission
+      setTimeout(() => {
+        onClose();
+      }, 500);
+      if (redirectAfterSubmit) {
+        setTimeout(() => {
+          window.location.href = redirectAfterSubmit;
+        }, 1000);
+      }
     } else {
       setCurrentQuestionIndex(prev => prev + 1);
     }
@@ -53,6 +128,8 @@ export default function QuestionPromptModal({ member, questions, isOpen, onClose
     setCurrentQuestionIndex(0);
     setAnswers([]);
     setCurrentAnswer('');
+    setTimeLeft(0);
+    setIsTimerActive(false);
     onClose();
   };
 
@@ -95,6 +172,18 @@ export default function QuestionPromptModal({ member, questions, isOpen, onClose
           />
         </div>
 
+        {/* Timer */}
+        <div className="text-center py-4">
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium ${
+            timeLeft > 10 ? 'bg-green-100 text-green-800' : 
+            timeLeft > 5 ? 'bg-yellow-100 text-yellow-800' : 
+            'bg-red-100 text-red-800'
+          }`}>
+            <span className="w-2 h-2 bg-current rounded-full animate-pulse"></span>
+            {timeLeft}s remaining
+          </div>
+        </div>
+
         {/* Question Content */}
         <div className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -104,7 +193,7 @@ export default function QuestionPromptModal({ member, questions, isOpen, onClose
           {currentQuestion.responseType === 'YES_NO' ? (
             <div className="space-y-3">
               <button
-                onClick={() => setCurrentAnswer('Yes')}
+                onClick={() => handleAnswer('Yes')}
                 className={`w-full p-4 rounded-lg border-2 transition-colors ${
                   currentAnswer === 'Yes'
                     ? 'border-green-500 bg-green-50 text-green-700'
@@ -121,7 +210,7 @@ export default function QuestionPromptModal({ member, questions, isOpen, onClose
                 </div>
               </button>
               <button
-                onClick={() => setCurrentAnswer('No')}
+                onClick={() => handleAnswer('No')}
                 className={`w-full p-4 rounded-lg border-2 transition-colors ${
                   currentAnswer === 'No'
                     ? 'border-red-500 bg-red-50 text-red-700'
@@ -152,21 +241,16 @@ export default function QuestionPromptModal({ member, questions, isOpen, onClose
         {/* Navigation */}
         <div className="p-6 border-t border-gray-200">
           <div className="flex gap-3">
-            {currentQuestionIndex > 0 && (
-              <button
-                onClick={handlePrevious}
-                className="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                Previous
-              </button>
-            )}
             <button
               onClick={handleNext}
-              className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-colors"
+              className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-colors"
             >
               {isLastQuestion ? 'Send Match Request' : 'Next'}
             </button>
           </div>
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            You cannot go back to previous questions
+          </p>
         </div>
       </div>
     </div>
