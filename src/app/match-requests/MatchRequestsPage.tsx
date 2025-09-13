@@ -6,6 +6,7 @@ import { transformImageUrl } from '@/lib/util';
 import RecipientQuestionModal from './RecipientQuestionModal';
 import QuestionQuizModal from './QuestionQuizModal';
 import { Question } from '@prisma/client';
+import Image from 'next/image';
 
 type MatchRequest = {
   id: string;
@@ -175,9 +176,11 @@ export default function MatchRequestsPage() {
                   <div key={request.id} className="bg-white rounded-lg shadow-sm border p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <img
+                        <Image
                           src={transformImageUrl(request.sender?.user.image) || '/images/user.png'}
                           alt={request.sender?.name}
+                          width={64}
+                          height={64}
                           className="w-16 h-16 rounded-full object-cover"
                         />
                         <div>
@@ -247,9 +250,11 @@ export default function MatchRequestsPage() {
                   <div key={request.id} className="bg-white rounded-lg shadow-sm border p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <img
+                        <Image
                           src={transformImageUrl(request.recipient?.user.image) || '/images/user.png'}
                           alt={request.recipient?.name}
+                          width={64}
+                          height={64}
                           className="w-16 h-16 rounded-full object-cover"
                         />
                         <div>

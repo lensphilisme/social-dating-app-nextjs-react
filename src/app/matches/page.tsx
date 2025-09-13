@@ -2,6 +2,7 @@ import { getMatches } from '@/app/actions/matchesActions';
 import { Card, CardBody, CardHeader } from '@nextui-org/react';
 import Link from 'next/link';
 import { transformImageUrl } from '@/lib/util';
+import Image from 'next/image';
 
 export default async function MatchesPage() {
   const matches = await getMatches();
@@ -68,11 +69,14 @@ export default async function MatchesPage() {
                   <Link href={`/members/${match.member.userId}`}>
                     <CardBody className="p-0">
                       <div className="relative">
-                        <img
-                          src={transformImageUrl(match.member.image) || '/images/user.png'}
-                          alt={match.member.name}
-                          className="w-full h-64 object-cover rounded-t-lg"
-                        />
+                        <div className="relative w-full h-64 rounded-t-lg overflow-hidden">
+                          <Image
+                            src={transformImageUrl(match.member.image) || '/images/user.png'}
+                            alt={match.member.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
                         <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 rounded-full text-sm font-semibold">
                           💕
                         </div>

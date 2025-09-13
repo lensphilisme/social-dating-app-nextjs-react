@@ -72,7 +72,7 @@ export async function rejectPhoto(photo: Photo) {
     if (role !== 'ADMIN') throw new Error('Forbidden');
 
     if (photo.publicId) {
-      await cloudinary.v2.uploader.destroy(photo.publicId);
+      await cloudinary.uploader.destroy(photo.publicId);
     }
 
     return prisma.photo.delete({
