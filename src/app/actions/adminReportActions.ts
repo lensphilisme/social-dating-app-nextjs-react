@@ -386,7 +386,7 @@ export async function sendSupportMessage(
     return { success: true, message };
   } catch (error) {
     console.error('Error sending support message:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -417,7 +417,7 @@ export async function assignReportToAdmin(reportId: string, adminId: string) {
     return { success: true, report };
   } catch (error) {
     console.error('Error assigning report:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -591,7 +591,7 @@ export async function sendUserSupportMessage(
     return { success: true, message };
   } catch (error) {
     console.error('Error sending user support message:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -678,7 +678,7 @@ export async function adminSendReportMessage(
     return { success: true, message, supportChat };
   } catch (error) {
     console.error('Error sending admin report message:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -728,6 +728,6 @@ export async function createUserSupportChat(
     return { success: true, chat, message };
   } catch (error) {
     console.error('Error creating user support chat:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
