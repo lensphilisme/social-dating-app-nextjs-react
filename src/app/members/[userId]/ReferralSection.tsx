@@ -68,7 +68,7 @@ export default function ReferralSection({
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Share this code with single, baptized Jehovah's Witnesses who meet our criteria
+              Share this code with single, baptized Jehovah&apos;s Witnesses who meet our criteria
             </p>
           </div>
           
@@ -83,7 +83,7 @@ export default function ReferralSection({
           
           {referredUsers.length > 0 && (
             <div>
-              <label className="text-sm font-semibold text-gray-600">People You've Referred</label>
+              <label className="text-sm font-semibold text-gray-600">People You&apos;ve Referred</label>
               <div className="space-y-2 mt-2">
                 {referredUsers.map((referredUser) => (
                   <div key={referredUser.id} className="flex items-center gap-2">

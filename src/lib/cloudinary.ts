@@ -7,6 +7,9 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Export the configured cloudinary instance
+export { cloudinary };
+
 export interface UploadResult {
   public_id: string;
   secure_url: string;

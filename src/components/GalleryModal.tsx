@@ -41,7 +41,7 @@ export default function GalleryModal({ isOpen, onClose, userId, userName }: Gall
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">{userName}'s Gallery</h2>
+            <h2 className="text-2xl font-bold text-gray-800">{userName}&apos;s Gallery</h2>
             <p className="text-sm text-gray-600">Photos, videos, and audio</p>
           </div>
           <button
@@ -64,7 +64,7 @@ export default function GalleryModal({ isOpen, onClose, userId, userName }: Gall
             <div className="text-center py-12">
               <div className="text-6xl mb-4">📸</div>
               <h3 className="text-xl font-semibold text-gray-700 mb-2">No media yet</h3>
-              <p className="text-gray-500">This user hasn't uploaded any photos, videos, or audio yet.</p>
+              <p className="text-gray-500">This user hasn&apos;t uploaded any photos, videos, or audio yet.</p>
             </div>
           )}
         </div>

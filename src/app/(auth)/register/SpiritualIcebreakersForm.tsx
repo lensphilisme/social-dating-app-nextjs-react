@@ -54,7 +54,7 @@ export default function SpiritualIcebreakersForm() {
       <div className="bg-blue-50 p-4 rounded-lg">
         <h3 className="font-semibold text-blue-800 mb-2">🎉 Almost Done!</h3>
         <p className="text-sm text-blue-700">
-          You're about to complete your registration! Once you submit, your profile will be created with all the information you've provided.
+          You&apos;re about to complete your registration! Once you submit, your profile will be created with all the information you&apos;ve provided.
         </p>
       </div>
     </div>

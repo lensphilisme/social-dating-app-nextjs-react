@@ -171,7 +171,7 @@ export default function DashboardContent() {
                 Welcome back! 👋
               </h1>
               <p className="text-neutral-600 text-lg">
-                Here's what's happening with your love life today
+                Here&apos;s what&apos;s happening with your love life today
               </p>
             </div>
             <div className="mt-4 lg:mt-0 flex items-center space-x-4">
@@ -314,7 +314,7 @@ export default function DashboardContent() {
 
             {/* Today's Stats */}
             <div className="bg-white rounded-2xl p-6 shadow-soft border border-neutral-200/50">
-              <h3 className="text-lg font-bold text-neutral-900 mb-4">Today's Stats</h3>
+              <h3 className="text-lg font-bold text-neutral-900 mb-4">Today&apos;s Stats</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">

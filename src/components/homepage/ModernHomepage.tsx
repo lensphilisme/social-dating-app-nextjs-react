@@ -225,7 +225,7 @@ export default function ModernHomepage() {
               Why Choose LoveConnect?
             </h2>
             <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
-              We've built the most advanced dating platform to help you find meaningful connections 
+              We&apos;ve built the most advanced dating platform to help you find meaningful connections 
               and lasting relationships.
             </p>
           </motion.div>
@@ -283,7 +283,7 @@ export default function ModernHomepage() {
                 ))}
               </div>
               <blockquote className="text-xl lg:text-2xl text-neutral-700 text-center mb-8 leading-relaxed">
-                "{testimonials[currentTestimonial].text}"
+                &quot;{testimonials[currentTestimonial].text}&quot;
               </blockquote>
               <div className="flex items-center justify-center space-x-4">
                 <img

@@ -81,7 +81,7 @@ export default function ReferralValidationForm() {
           <div className="bg-blue-50 p-4 rounded-lg">
             <h3 className="font-semibold text-blue-800 mb-2">🔒 Platform Access</h3>
             <p className="text-sm text-blue-700">
-              This platform is exclusively for baptized Jehovah's Witnesses who meet our criteria:
+              This platform is exclusively for baptized Jehovah&apos;s Witnesses who meet our criteria:
             </p>
             <ul className="text-sm text-blue-700 mt-2 space-y-1">
               <li>• Must be baptized for at least 2 years</li>

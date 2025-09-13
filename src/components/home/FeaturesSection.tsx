@@ -55,7 +55,7 @@ export default function FeaturesSection() {
             Why Choose LoveConnect?
           </h2>
           <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
-            We've built the most advanced dating platform to help you find meaningful connections 
+            We&apos;ve built the most advanced dating platform to help you find meaningful connections 
             and lasting relationships.
           </p>
         </motion.div>

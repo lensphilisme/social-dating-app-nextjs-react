@@ -168,7 +168,7 @@ export default function MatchRequestsPage() {
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">💌</div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">No match requests</h3>
-                  <p className="text-gray-600">You haven't received any match requests yet</p>
+                  <p className="text-gray-600">You haven&apos;t received any match requests yet</p>
                 </div>
               ) : (
                 receivedRequests.map((request) => (
@@ -240,7 +240,7 @@ export default function MatchRequestsPage() {
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">📤</div>
                   <h3 className="text-xl font-semibold text-gray-900 mb-2">No sent requests</h3>
-                  <p className="text-gray-600">You haven't sent any match requests yet</p>
+                  <p className="text-gray-600">You haven&apos;t sent any match requests yet</p>
                 </div>
               ) : (
                 sentRequests.map((request) => (

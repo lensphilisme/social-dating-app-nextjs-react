@@ -87,7 +87,7 @@ export default function LoginForm() {
                 Forgot password?
               </Link>
               <div className='text-center'>
-                <span className='text-gray-600 text-sm'>Don't have an account? </span>
+                <span className='text-gray-600 text-sm'>Don&apos;t have an account? </span>
                 <Link href='/register' className='text-purple-600 hover:text-purple-700 font-semibold text-sm hover:underline'>
                   Register here
                 </Link>

@@ -38,7 +38,7 @@ export default async function MaintenancePage() {
             </svg>
           </div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            We're Under Maintenance
+            We&apos;re Under Maintenance
           </h2>
           <p className="text-gray-600 leading-relaxed">
             {siteDescription}
@@ -56,7 +56,7 @@ export default async function MaintenancePage() {
         {/* Footer */}
         <div className="text-xs text-gray-500">
           <p>Thank you for your patience</p>
-          <p className="mt-1">We'll be back online shortly</p>
+          <p className="mt-1">We&apos;ll be back online shortly</p>
         </div>
       </div>
     </div>

@@ -26,7 +26,7 @@ export default async function MatchesPage() {
             Your Matches
           </h1>
           <p className="text-white text-lg opacity-90">
-            People you've mutually matched with
+            People you&apos;ve mutually matched with
           </p>
         </div>
 

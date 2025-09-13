@@ -119,7 +119,7 @@ export default async function ThemeDemoPage() {
             <div className="card">
               <h3 className="text-lg font-semibold mb-2">Regular Card</h3>
               <p className="text-text-secondary">
-                This card uses the current theme's background and text colors.
+                This card uses the current theme&apos;s background and text colors.
               </p>
             </div>
             <div className="card-gradient">
@@ -131,7 +131,7 @@ export default async function ThemeDemoPage() {
             <div className="card">
               <h3 className="text-lg font-semibold mb-2 text-gradient">Gradient Text</h3>
               <p className="text-text-secondary">
-                This text uses a gradient effect with the theme's primary and secondary colors.
+                This text uses a gradient effect with the theme&apos;s primary and secondary colors.
               </p>
             </div>
           </div>

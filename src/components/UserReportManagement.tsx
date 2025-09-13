@@ -191,7 +191,7 @@ export default function UserReportManagement({ sentReports, receivedReports }: U
                   <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">No reports sent</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    You haven't sent any reports yet.
+                    You haven&apos;t sent any reports yet.
                   </p>
                 </div>
               ) : (
@@ -283,7 +283,7 @@ export default function UserReportManagement({ sentReports, receivedReports }: U
                   <CheckCircleIcon className="mx-auto h-12 w-12 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">No reports received</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    You haven't received any reports.
+                    You haven&apos;t received any reports.
                   </p>
                 </div>
               ) : (

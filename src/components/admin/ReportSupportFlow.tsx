@@ -231,7 +231,7 @@ export default function ReportSupportFlow({ report, onClose, onSuccess }: Report
                         What happens next?
                       </h4>
                       <ul className="text-sm text-blue-800 space-y-1">
-                        <li>• Report status will be updated to "Ask More Details"</li>
+                        <li>• Report status will be updated to &quot;Ask More Details&quot;</li>
                         <li>• A support chat will be created automatically</li>
                         <li>• The user will receive your message and can respond</li>
                         <li>• You can continue the conversation in the support center</li>

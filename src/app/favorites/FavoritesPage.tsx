@@ -92,7 +92,7 @@ export default function FavoritesPage() {
             Your Favorites
           </h1>
           <p className="text-white text-lg opacity-90">
-            People you've liked from the discover page
+            People you&apos;ve liked from the discover page
           </p>
         </div>
 
