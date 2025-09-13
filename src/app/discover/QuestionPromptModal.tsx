@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Member, Question } from '@prisma/client';
 import { transformImageUrl } from '@/lib/util';
 
@@ -24,34 +24,6 @@ export default function QuestionPromptModal({ member, questions, isOpen, onClose
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const isYesNoQuestion = currentQuestion?.responseType === 'YES_NO';
 
-  // Timer effect
-  useEffect(() => {
-    if (isTimerActive && timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (timeLeft === 0 && isTimerActive) {
-      // Auto-submit when timer expires
-      if (isYesNoQuestion && currentAnswer === '') {
-        handleAnswer('No'); // Default to No if no answer given
-      } else if (!isYesNoQuestion && currentAnswer.trim()) {
-        // Auto-submit open text if there's an answer
-        handleNext();
-      } else if (isLastQuestion) {
-        // Auto-submit if it's the last question (even with no answers)
-        onSubmit(answers);
-        // Close modal after submission
-        setTimeout(() => {
-          onClose();
-        }, 500);
-        if (redirectAfterSubmit) {
-          setTimeout(() => {
-            window.location.href = redirectAfterSubmit;
-          }, 1000);
-        }
-      }
-    }
-  }, [timeLeft, isTimerActive, isYesNoQuestion, currentAnswer, answers, isLastQuestion]);
-
   // Start timer when question changes
   useEffect(() => {
     if (currentQuestion && isOpen) {
@@ -61,7 +33,7 @@ export default function QuestionPromptModal({ member, questions, isOpen, onClose
     }
   }, [currentQuestion, isOpen]);
 
-  const handleAnswer = (answer: string) => {
+  const handleAnswer = useCallback((answer: string) => {
     setCurrentAnswer(answer);
     
     // For YES_NO questions, auto-advance after selection
@@ -84,9 +56,9 @@ export default function QuestionPromptModal({ member, questions, isOpen, onClose
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       }
     }
-  };
+  }, [isYesNoQuestion, answers, currentQuestion.id, isLastQuestion, onSubmit, onClose, redirectAfterSubmit, currentQuestionIndex]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (!currentAnswer.trim()) {
       alert('Please provide an answer');
       return;
@@ -114,7 +86,35 @@ export default function QuestionPromptModal({ member, questions, isOpen, onClose
     } else {
       setCurrentQuestionIndex(prev => prev + 1);
     }
-  };
+  }, [currentAnswer, answers, currentQuestion.id, isLastQuestion, onSubmit, onClose, redirectAfterSubmit]);
+
+  // Timer effect
+  useEffect(() => {
+    if (isTimerActive && timeLeft > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (timeLeft === 0 && isTimerActive) {
+      // Auto-submit when timer expires
+      if (isYesNoQuestion && currentAnswer === '') {
+        handleAnswer('No'); // Default to No if no answer given
+      } else if (!isYesNoQuestion && currentAnswer.trim()) {
+        // Auto-submit open text if there's an answer
+        handleNext();
+      } else if (isLastQuestion) {
+        // Auto-submit if it's the last question (even with no answers)
+        onSubmit(answers);
+        // Close modal after submission
+        setTimeout(() => {
+          onClose();
+        }, 500);
+        if (redirectAfterSubmit) {
+          setTimeout(() => {
+            window.location.href = redirectAfterSubmit;
+          }, 1000);
+        }
+      }
+    }
+  }, [timeLeft, isTimerActive, isYesNoQuestion, currentAnswer, answers, isLastQuestion, handleAnswer, handleNext, onClose, onSubmit, redirectAfterSubmit]);
 
   const handlePrevious = () => {
     if (currentQuestionIndex > 0) {
