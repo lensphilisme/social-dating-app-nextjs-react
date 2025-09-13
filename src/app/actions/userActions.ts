@@ -202,7 +202,7 @@ export async function deleteImage(photo: Photo) {
     }
 
     if (photo.publicId) {
-      await cloudinary.v2.uploader.destroy(photo.publicId);
+      await cloudinary.uploader.destroy(photo.publicId);
     }
 
     return prisma.member.update({
