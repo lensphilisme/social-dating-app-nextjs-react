@@ -39,8 +39,8 @@ import { regenerateReferralCode } from '@/lib/referralUtils';
 interface Member {
   id: string;
   name: string;
-  firstName: string;
-  lastName: string;
+  firstName: string | null;
+  lastName: string | null;
   dateOfBirth: Date;
   gender: string;
   description: string;
