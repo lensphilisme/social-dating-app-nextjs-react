@@ -32,8 +32,10 @@ export default function ReferralValidationForm() {
         sessionStorage.setItem('validReferralCode', referralCode.trim());
         // Redirect to the main registration form
         router.push('/register/form');
-      } else {
+      } else if (result.status === 'error') {
         setError(result.error || 'Invalid referral code');
+      } else {
+        setError('Invalid referral code');
       }
     } catch (error) {
       setError('Error validating referral code. Please try again.');
