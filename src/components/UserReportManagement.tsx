@@ -36,10 +36,10 @@ export default function UserReportManagement({ sentReports, receivedReports }: U
   const [showReportModal, setShowReportModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [selectedChat, setSelectedChat] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState('sent');
+  const [activeTab, setActiveTab] = useState<'sent' | 'received'>('sent');
   const [isLoading, setIsLoading] = useState(false);
 
-  const tabs = [
+  const tabs: Array<{ id: 'sent' | 'received'; name: string; count: number }> = [
     { id: 'sent', name: 'Reports Sent', count: sentReports.length },
     { id: 'received', name: 'Reports Received', count: receivedReports.length }
   ];
@@ -105,7 +105,7 @@ export default function UserReportManagement({ sentReports, receivedReports }: U
     }
   };
 
-  const getStatusDescription = (status: string, isReceived: boolean = false) => {
+  const getStatusDescription = (status: string, isReceived: boolean = false): string => {
     if (isReceived) {
       // For received reports, they only see RESOLVED status
       return 'This report has been resolved and action has been taken. This report is now on your record.';
@@ -233,7 +233,7 @@ export default function UserReportManagement({ sentReports, receivedReports }: U
                           )}
 
                           <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                            <p className="text-sm text-blue-700">{getStatusDescription(report.status, activeTab === 'received')}</p>
+                            <p className="text-sm text-blue-700">{getStatusDescription(report.status, (activeTab as string) === 'received')}</p>
                           </div>
 
                           {report.proof && (
@@ -325,7 +325,7 @@ export default function UserReportManagement({ sentReports, receivedReports }: U
                           )}
 
                           <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                            <p className="text-sm text-blue-700">{getStatusDescription(report.status, activeTab === 'received')}</p>
+                            <p className="text-sm text-blue-700">{getStatusDescription(report.status, (activeTab as string) === 'received')}</p>
                           </div>
 
                           {report.proof && (
