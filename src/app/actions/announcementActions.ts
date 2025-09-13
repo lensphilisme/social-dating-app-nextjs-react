@@ -94,7 +94,7 @@ export async function getActiveAnnouncements(userId: string, sessionId: string) 
 
     // Filter out announcement that have been dismissed in this session
     // or have reached max views
-    const filteredAnnouncements = announcement.filter(ann => {
+    const filteredAnnouncements = announcement.filter((ann: any) => {
       const userViews = ann.views || [];
       const sessionViews = userViews.filter((view: any) => view.sessionId === sessionId);
       const dismissedInSession = sessionViews.some((view: any) => view.dismissed);
