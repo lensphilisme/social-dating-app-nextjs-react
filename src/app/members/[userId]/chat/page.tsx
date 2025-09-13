@@ -26,7 +26,19 @@ export default async function ChatPage({params}: {params: Promise<{userId: strin
     
     // Get messages and user info
     const messageThread = await getMessageThread(targetUserId);
-    const messages = messageThread?.messages || [];
+    const rawMessages = messageThread?.messages || [];
+    
+    // Transform messages to match ChatInterface expected format
+    const messages = rawMessages.map(msg => ({
+        id: msg.id,
+        content: msg.text,
+        senderId: msg.senderId || '',
+        recipientId: msg.recipientId || '',
+        dateSent: new Date(msg.created),
+        dateRead: msg.dateRead ? new Date(msg.dateRead) : undefined,
+        imageUrl: undefined
+    }));
+    
     const chatId = createChatId(userId, targetUserId);
     
     // Get target user info for header
