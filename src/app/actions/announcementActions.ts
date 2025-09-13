@@ -56,18 +56,26 @@ export async function getActiveAnnouncements(userId: string, sessionId: string) 
     const announcement = await (prisma as any).announcement.findMany({
       where: {
         isActive: true,
-        OR: [
-          { startDate: null },
-          { startDate: { lte: now } }
-        ],
-        OR: [
-          { endDate: null },
-          { endDate: { gte: now } }
-        ],
-        OR: [
-          { targetUsers: null },
-          { targetUsers: 'all' },
-          { targetUsers: { contains: userId } }
+        AND: [
+          {
+            OR: [
+              { startDate: null },
+              { startDate: { lte: now } }
+            ]
+          },
+          {
+            OR: [
+              { endDate: null },
+              { endDate: { gte: now } }
+            ]
+          },
+          {
+            OR: [
+              { targetUsers: null },
+              { targetUsers: 'all' },
+              { targetUsers: { contains: userId } }
+            ]
+          }
         ]
       },
       include: {
